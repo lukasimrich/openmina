@@ -1393,14 +1393,7 @@
       }
 
       if (typeof module_or_path === 'undefined') {
-          // In worker context, use Chrome extension URL for WASM file
-          if (typeof document === 'undefined' && typeof chrome !== 'undefined' && chrome.runtime) {
-              module_or_path = chrome.runtime.getURL('dist/openmina_node_web_bg.wasm');
-          } else if (typeof document === 'undefined') {
-              module_or_path = './dist/openmina_node_web_bg.wasm';
-          } else {
-              module_or_path = new URL('openmina_node_web_bg.wasm', (document.currentScript && document.currentScript.tagName.toUpperCase() === 'SCRIPT' && document.currentScript.src || new URL('worker-bundle.js', document.baseURI).href));
-          }
+          module_or_path = new URL('openmina_node_web_bg.wasm', (document.currentScript && document.currentScript.tagName.toUpperCase() === 'SCRIPT' && document.currentScript.src || new URL('worker-bundle.js', document.baseURI).href));
       }
       const imports = __wbg_get_imports();
 
@@ -1496,23 +1489,14 @@
       });
 
       // Make the node available globally for the extension
-      if (typeof window !== 'undefined') {
-        window.openminaNode = rpcSender;
-        console.log("OpenMina bundled module: Node attached to window.openminaNode");
+      window.openminaNode = rpcSender;
+      console.log("OpenMina bundled module: Node attached to window.openminaNode");
 
-        // Dispatch success event
-        window.dispatchEvent(new CustomEvent('openmina-ready', {
-          detail: { rpcSender, buildEnv }
-        }));
-        console.log("OpenMina bundled module: Success event dispatched");
-      } else {
-        // In worker context, store globally and make functions available
-        self.openminaNode = rpcSender;
-        self.build_env = build_env;
-        self.run = run;
-        self.main = main;
-        console.log("OpenMina bundled module: Node and functions attached to self (worker context)");
-      }
+      // Dispatch success event
+      window.dispatchEvent(new CustomEvent('openmina-ready', {
+        detail: { rpcSender, buildEnv }
+      }));
+      console.log("OpenMina bundled module: Success event dispatched");
 
     } catch (error) {
       console.error("OpenMina bundled module: Initialization failed:", error);
@@ -1529,13 +1513,9 @@
       }
 
       // Dispatch error event
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('openmina-error', {
-          detail: error.message || error.toString()
-        }));
-      } else {
-        console.log("OpenMina bundled module: Error in worker context:", error.message || error.toString());
-      }
+      window.dispatchEvent(new CustomEvent('openmina-error', {
+        detail: error.message || error.toString()
+      }));
     }
   }
 

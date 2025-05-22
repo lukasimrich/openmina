@@ -44,6 +44,30 @@ async function initializeWasmNode() {
           chrome.runtime.sendMessage({ type: "NODE_STATUS_UPDATE", payload: "WASM worker ready" });
           break;
 
+        case 'NODE_STARTED':
+          console.log("🎉 OpenMina node started successfully in worker!");
+          console.log("Node details:", payload);
+
+          // Store the worker reference for RPC calls
+          window.openminaWorker = worker;
+
+          // Send node started message to background script
+          chrome.runtime.sendMessage({
+            type: "NODE_STATUS_UPDATE",
+            payload: "OpenMina node running and ready for sync"
+          });
+
+          // Log node capabilities
+          if (payload.availableExports) {
+            console.log("=== OPENMINA NODE CAPABILITIES ===");
+            console.log("Available exports:", payload.availableExports);
+            console.log("RPC interface:", payload.rpcInterface);
+            console.log("Memory size:", payload.memorySize);
+            console.log("Shared memory:", payload.sharedMemory);
+            console.log("=== END NODE CAPABILITIES ===");
+          }
+          break;
+
         case 'WASM_ERROR':
           console.error("OpenMina WASM initialization failed in worker:", payload);
           chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: `Worker Init Error: ${payload}` });
@@ -65,7 +89,11 @@ async function initializeWasmNode() {
 
     // Initialize the WASM module in the worker
     console.log("Offscreen: Sending INIT command to worker...");
-    worker.postMessage({ type: 'INIT_WASM' });
+    const wasmUrl = chrome.runtime.getURL('dist/openmina_node_web_bg.wasm');
+    worker.postMessage({
+      type: 'INIT_WASM',
+      payload: { wasmUrl }
+    });
 
   } catch (error) {
     console.error("Error during Web Worker WASM setup:", error);
