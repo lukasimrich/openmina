@@ -12,68 +12,65 @@ if (!self.crossOriginIsolated) {
 }
 
 async function initializeWasmNode() {
-  console.log("Offscreen: Attempting to initialize BUNDLED WASM...");
+  console.log("Offscreen: Attempting to initialize WASM in Web Worker...");
   try {
-    // Load the bundled module that contains everything pre-resolved
-    const script = document.createElement('script');
-    script.type = 'module';
-    script.src = chrome.runtime.getURL('dist/bundle.js');
-    console.log("Offscreen: Created script element with src:", script.src);
+    // Create a dedicated Web Worker for WASM execution
+    const workerScript = chrome.runtime.getURL('mina_worker.js');
+    console.log("Offscreen: Creating Web Worker with script:", workerScript);
 
-    // Listen for initialization completion from the bundled module
-    window.addEventListener('openmina-ready', (event) => {
-      console.log("OpenMina bundled module initialized successfully");
-      console.log("Event detail:", event.detail);
-      console.log("Event detail RpcSender:", event.detail.rpcSender);
-      console.log("Event detail buildEnv:", event.detail.buildEnv);
-      chrome.runtime.sendMessage({ type: "NODE_STATUS_UPDATE", payload: "WASM bundled module loaded" });
+    const worker = new Worker(workerScript); // Classic worker for importScripts() support
 
-      // Access the initialized WASM functions
-      if (window.openminaNode) {
-        console.log("=== WASM OBJECT INSPECTION ===");
-        console.log("window.openminaNode:", window.openminaNode);
-        console.log("Type:", typeof window.openminaNode);
-        console.log("Constructor:", window.openminaNode.constructor.name);
-        console.log("Own properties:", Object.getOwnPropertyNames(window.openminaNode));
-        console.log("Prototype:", Object.getPrototypeOf(window.openminaNode));
-        console.log("Prototype methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(window.openminaNode)));
+    // Set up communication with the worker
+    worker.onmessage = (event) => {
+      const { type, payload } = event.data;
+      console.log("Offscreen: Received message from worker:", type, payload);
 
-        // Check all methods and properties
-        const allKeys = [...Object.getOwnPropertyNames(window.openminaNode), ...Object.getOwnPropertyNames(Object.getPrototypeOf(window.openminaNode))];
-        const uniqueKeys = [...new Set(allKeys)];
-        console.log("All available keys:", uniqueKeys);
+      switch (type) {
+        case 'WASM_READY':
+          console.log("OpenMina WASM initialized successfully in worker");
+          console.log("Worker payload:", payload);
+          chrome.runtime.sendMessage({ type: "NODE_STATUS_UPDATE", payload: "WASM loaded in worker" });
 
-        uniqueKeys.forEach(key => {
-          try {
-            const value = window.openminaNode[key];
-            console.log(`- ${key}: ${typeof value} ${typeof value === 'function' ? '(function)' : ''}`);
-          } catch (e) {
-            console.log(`- ${key}: (error accessing: ${e.message})`);
+          // Store worker reference for future communication
+          window.openminaWorker = worker;
+
+          // Log available capabilities
+          if (payload.buildEnv) {
+            console.log("=== WASM BUILD ENVIRONMENT ===");
+            console.log("Build environment:", payload.buildEnv);
+            console.log("=== END BUILD ENVIRONMENT ===");
           }
-        });
 
-        console.log("=== END WASM OBJECT INSPECTION ===");
-        chrome.runtime.sendMessage({ type: "NODE_STATUS_UPDATE", payload: "WASM object loaded and inspected" });
-      } else {
-        console.error("OpenMina node not available on window object");
-        chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: "Node not available after bundle load" });
+          chrome.runtime.sendMessage({ type: "NODE_STATUS_UPDATE", payload: "WASM worker ready" });
+          break;
+
+        case 'WASM_ERROR':
+          console.error("OpenMina WASM initialization failed in worker:", payload);
+          chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: `Worker Init Error: ${payload}` });
+          break;
+
+        case 'WASM_LOG':
+          console.log("Worker log:", payload);
+          break;
+
+        default:
+          console.log("Unknown message from worker:", type, payload);
       }
-    });
+    };
 
-    // Handle initialization errors
-    window.addEventListener('openmina-error', (event) => {
-      console.error("OpenMina bundled module initialization failed:", event.detail);
-      chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: `Bundle Init Error: ${event.detail}` });
-    });
+    worker.onerror = (error) => {
+      console.error("Worker error:", error);
+      chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: `Worker Error: ${error.message}` });
+    };
 
-    console.log("Offscreen: Appending script to document head...");
-    document.head.appendChild(script);
-    console.log("Bundled WASM script injected, waiting for initialization...");
+    // Initialize the WASM module in the worker
+    console.log("Offscreen: Sending INIT command to worker...");
+    worker.postMessage({ type: 'INIT_WASM' });
 
   } catch (error) {
-    console.error("Error during BUNDLED WASM loading:", error);
+    console.error("Error during Web Worker WASM setup:", error);
     console.error("Error stack:", error.stack);
-    chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: `Bundle Load Error: ${error.message}` });
+    chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: `Worker Setup Error: ${error.message}` });
   }
 }
 

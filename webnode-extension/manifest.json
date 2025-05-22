@@ -30,7 +30,9 @@
       "resources": [
         "offscreen.html",
         "sidebar.html",
+        "mina_worker.js",
         "dist/bundle.js",
+        "dist/worker-bundle.js",
         "dist/openmina_node_web_bg.wasm"
       ],
       "matches": ["<all_urls>"]
