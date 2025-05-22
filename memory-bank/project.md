@@ -72,9 +72,9 @@ cross_origin_opener_policy: {"value": "same-origin"} (Essential for COI)
 
 cross_origin_embedder_policy: {"value": "require-corp"} (Essential for COI)
 
-web_accessible_resources: [{ "resources": ["offscreen.html", "sidebar.html", "wasm/*"], "matches": ["<all_urls>"] }]
+web_accessible_resources: [{ "resources": ["offscreen.html", "sidebar.html", "dist/bundle.js", "dist/openmina_node_web_bg.wasm"], "matches": ["<all_urls>"] }]
 
-Note: The wasm/\* path must correctly point to your WASM files (openmina.js, openmina_bg.wasm) and any minimal worker snippet files if the WASM module requires them for its internal threading (see Phase 2).
+Note: The dist/ path contains the bundled ES module and WASM binary. The bundle.js includes all resolved imports and snippets, while the WASM file is served as a static asset.
 
 sidebar.html (Ultra-Simple): (No change from previous plan)
 
@@ -177,28 +177,85 @@ return true;
 // Signal readiness (and COI status) to background
 chrome.runtime.sendMessage({ type: "OFFSCREEN_READY_ACK" });
 
-Phase 2: Threaded WASM Loading & Basic Initialization
+Phase 2: Bundled WASM Loading & Basic Initialization (Bundle Everything Strategy)
 
-Objective: Load the OpenMina WASM module and its JS interface. Initialize it, anticipating its threading requirements.
+Objective: Use a comprehensive bundling approach to resolve all WASM module loading challenges in Chrome MV3. Bundle the WASM, JS glue code, and all snippets into a single ES module that can be loaded safely.
 
-Rationale: With COI hopefully established, attempt to run the threaded WASM. This may involve providing minimal worker scripts or global shims if the WASM expects them.
+Rationale: Instead of trying to resolve dynamic imports and snippet loading at runtime, pre-bundle everything into a single file that Chrome MV3 can load without CSP violations or import resolution issues.
 
-File Placement (Potentially including worker snippets):
+Strategy: Bundle Everything, Then Load with MV3
 
-Ensure the main WASM file (openmina_bg.wasm), its JS interface (openmina.js) are in wasm/.
+Step 1: WASM Compilation with --target web
 
-NEW: If your specific OpenMina WASM module (e.g., if compiled with Emscripten pthreads) expects to find worker scripts (e.g., openmina.worker.js), these minimal worker scripts must also be placed in wasm/ and be web-accessible.
+-   Use wasm-bindgen --target web for proper module semantics
+-   This supports wasm-bindgen(module = "...") and snippet imports
+-   Command: wasm-bindgen --target web --out-dir pkg ./target/wasm32-unknown-unknown/release/openmina_node_web.wasm
 
-A minimal openmina.worker.js might just import the main openmina.js again: importScripts('openmina.js'); or whatever the specific WASM's threading model requires. This is highly dependent on the WASM module itself.
+Step 2: Rollup Bundling Configuration
 
-offscreen.js (Phase 2 - Threaded WASM Integration):
+-   Install bundling dependencies:
+    npm install --save-dev rollup @rollup/plugin-node-resolve @rollup/plugin-commonjs @rollup/plugin-wasm rollup-plugin-terser
 
-Modify offscreen.js from Phase 1. Call initializeWasmNode() when INIT_WASM_IN_OFFSCREEN is received and COI is true.
+-   Create index.js entry point:
+    import initWasm, { run, build_env } from './pkg/openmina_node_web.js';
 
-The initializeWasmNode function must now be prepared for threading.
+    async function init() {
+    await initWasm(); // calls the start() method
+    run();
+    }
 
-// offscreen.js (Phase 2 - Modified for Threaded WASM)
-console.log("Offscreen script loaded (Phase 2 - Threaded Focus).");
+    init();
+
+-   Configure rollup.config.js:
+    import resolve from '@rollup/plugin-node-resolve';
+    import commonjs from '@rollup/plugin-commonjs';
+    import { wasm } from '@rollup/plugin-wasm';
+
+    export default {
+    input: 'index.js',
+    output: {
+    file: 'dist/bundle.js',
+    format: 'es',
+    },
+    plugins: [
+    resolve(),
+    commonjs(),
+    wasm(),
+    ],
+    };
+
+-   Build command: npx rollup -c
+
+Step 3: File Structure & Placement
+
+-   dist/bundle.js - The complete bundled ES module
+-   dist/openmina_node_web_bg.wasm - WASM binary (served as static asset)
+-   Both files must be in web_accessible_resources
+
+Step 4: Chrome MV3 Loading Implementation
+
+Update manifest.json web_accessible_resources:
+{
+"web_accessible_resources": [
+{
+"resources": ["offscreen.html", "sidebar.html", "dist/bundle.js", "dist/openmina_node_web_bg.wasm"],
+"matches": ["<all_urls>"]
+}
+]
+}
+
+Create injector.js for content script loading:
+const script = document.createElement('script');
+script.type = 'module';
+script.src = chrome.runtime.getURL('dist/bundle.js');
+document.documentElement.appendChild(script);
+
+offscreen.js (Phase 2 - Bundled WASM Integration):
+
+Modify offscreen.js from Phase 1 to load the bundled module instead of individual files.
+
+// offscreen.js (Phase 2 - Bundled WASM Approach)
+console.log("Offscreen script loaded (Phase 2 - Bundled WASM Focus).");
 
 // Critical COI Check (repeated for clarity, though initial check should prevent proceeding)
 if (!self.crossOriginIsolated) {
@@ -206,50 +263,53 @@ console.error("CRITICAL: Attempting Phase 2 WASM load without cross-origin isola
 chrome.runtime.sendMessage({ type: "NODE_ERROR_UPDATE", payload: "WASM Load Aborted: Not isolated." });
 throw new Error("Cannot initialize WASM: Not cross-origin isolated.");
 } else {
-console.log("Offscreen document IS cross-origin isolated. Proceeding with threaded WASM setup.");
+console.log("Offscreen document IS cross-origin isolated. Proceeding with bundled WASM setup.");
 }
 
 async function initializeWasmNode() {
-console.log("Offscreen: Attempting to initialize THREADED WASM...");
+console.log("Offscreen: Attempting to initialize BUNDLED WASM...");
 try {
-// --- Minimal Shims/Globals (YAGNI: Only if WASM errors indicate they are needed) ---
-// Example: If WASM checks for 'isWebWorkerThread' or similar for its pthreads model
-// self.isWebWorkerThread = false; // Or a function: self.isWebWorkerThread = () => false;
-// self.spawnWebWorker = (url) => { /_ minimal implementation or error if unexpected _/ };
-// These are HYPOTHETICAL. Only add if errors from the WASM module point to missing globals.
-// ------------------------------------------------------------------------------------
+// Load the bundled module that contains everything pre-resolved
+const script = document.createElement('script');
+script.type = 'module';
+script.src = chrome.runtime.getURL('dist/bundle.js');
 
-        const wasmModule = await import('./wasm/openmina.js'); // Adjust path
+// Listen for initialization completion from the bundled module
+window.addEventListener('openmina-ready', (event) => {
+console.log("OpenMina bundled module initialized successfully");
+chrome.runtime.sendMessage({ type: "NODE_STATUS_UPDATE", payload: "WASM bundled module loaded" });
 
-        if (typeof wasmModule.default === 'function') {
-            // The init function might take an optional path to the .wasm file,
-            // or a URL to the worker script if the WASM handles its own worker spawning.
-            // Consult your WASM module's documentation for threading init.
-            // Example: await wasmModule.default(chrome.runtime.getURL('wasm/openmina_bg.wasm'));
-            await wasmModule.default();
-        } else if (typeof wasmModule.init === 'function') {
-            await wasmModule.init();
-        }
-        console.log("WASM module script interface initialized/loaded.");
+// Access the initialized WASM functions
+if (window.openminaNode) {
+console.log("OpenMina Node instance available");
+// Test basic functionality
+if (typeof window.openminaNode.status === 'function') {
+const status = window.openminaNode.status();
+console.log("Node status:", status);
+chrome.runtime.sendMessage({ type: "NODE_STATUS", payload: JSON.stringify(status) });
+} else {
+console.log("Node status function not available, but node object exists");
+chrome.runtime.sendMessage({ type: "NODE_STATUS", payload: "Node loaded, status pending" });
+}
+} else {
+console.error("OpenMina node not available on window object");
+chrome.runtime.sendMessage({ type: "NODE_ERROR", payload: "Node not available after bundle load" });
+}
+});
 
-        // The 'run' function might also need specific parameters for threading.
-        const node = await wasmModule.run({ /* potential threading config here */ });
-        console.log("OpenMina Node instance obtained (threaded).");
+// Handle initialization errors
+window.addEventListener('openmina-error', (event) => {
+console.error("OpenMina bundled module initialization failed:", event.detail);
+chrome.runtime.sendMessage({ type: "NODE_ERROR", payload: `Bundle Init Error: ${event.detail}` });
+});
 
-        if (node && typeof node.status === 'function') {
-            const status = await node.status();
-            console.log("Node status:", status);
-            chrome.runtime.sendMessage({ type: "NODE_STATUS", payload: JSON.stringify(status) });
-        } else {
-            console.error("Node object or status function not available as expected.");
-            chrome.runtime.sendMessage({ type: "NODE_ERROR", payload: "Node API not as expected after run()." });
-        }
-    } catch (error) {
-        console.error("Error during THREADED WASM initialization or run:", error);
-        // Log specific errors like "unreachable" in is_web_worker_thread if they occur.
-        chrome.runtime.sendMessage({ type: "NODE_ERROR", payload: `WASM Init/Run Error: ${error.message}` });
-    }
+document.head.appendChild(script);
+console.log("Bundled WASM script injected, waiting for initialization...");
 
+} catch (error) {
+console.error("Error during BUNDLED WASM loading:", error);
+chrome.runtime.sendMessage({ type: "NODE_ERROR", payload: `Bundle Load Error: ${error.message}` });
+}
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -269,34 +329,74 @@ return true;
 // Initial readiness & COI check signal (already sent on load by Phase 1 logic)
 // chrome.runtime.sendMessage({ type: "OFFSCREEN_READY_ACK" });
 
-Phase 3: Basic UI Feedback (No change from previous plan)
+Build Process & Development Workflow:
+
+Step 1: Compile WASM with proper target
+cargo build --release --target wasm32-unknown-unknown
+wasm-bindgen --target web --out-dir pkg ./target/wasm32-unknown-unknown/release/openmina_node_web.wasm
+
+Step 2: Set up bundling environment
+npm init -y
+npm install --save-dev rollup @rollup/plugin-node-resolve @rollup/plugin-commonjs @rollup/plugin-wasm rollup-plugin-terser
+
+Step 3: Create bundling configuration files
+
+-   index.js (entry point)
+-   rollup.config.js (bundling configuration)
+
+Step 4: Build bundled module
+npx rollup -c
+
+Step 5: Copy files to extension directory
+
+-   Copy dist/bundle.js to extension/dist/
+-   Copy dist/openmina_node_web_bg.wasm to extension/dist/
+
+Phase 3: Basic UI Feedback & Integration Testing
+
+Objective: Complete the communication loop between bundled WASM and UI, with comprehensive error handling and status reporting.
 
 Key Milestones:
 
 M1: Sidebar UI & Critically Cross-Origin Isolated Offscreen Document: sidebar.html loads, Phase 1 offscreen.js runs and confirms self.crossOriginIsolated === true. Basic message exchange works. If COI is false, M1 is failed, and this is a blocker.
 
-M2: Threaded WASM Module Loaded & Initialized: Phase 2 offscreen.js successfully imports openmina.js (and its .wasm). The initializeWasmNode function completes the WASM module's own initialization sequence (which may involve its internal threading mechanisms) without runtime errors.
+M2: Bundled WASM Module Successfully Loaded: Phase 2 offscreen.js successfully loads the bundled dist/bundle.js module. The bundle resolves all imports internally and initializes without CSP violations or import resolution errors.
 
-M3: Basic Node Interaction (Threaded Context): A core function of the WASM node (e.g., status()) can be called after threaded initialization, and its result is logged/passed back.
+M3: WASM Initialization in Threaded Context: The bundled module successfully initializes the WASM with threading support, and basic functions are accessible via the window object or event system.
 
-M4: Sidebar UI Displays Node Status: (Same as previous plan)
+M4: Basic Node Interaction & Status Reporting: A core function of the WASM node (e.g., status()) can be called after bundled initialization, and its result is logged and passed back to the sidebar UI.
 
-Ruthless Prioritization - What to IGNORE for MVP (YAGNI List - Adjusted for Threading):
+M5: End-to-End Communication Flow: Sidebar UI can trigger WASM initialization, receive status updates, and display meaningful feedback to the user.
 
-Advanced Threading Management: No custom worker pools, complex inter-worker communication beyond what the WASM module handles internally, or optimization of thread performance. The goal is to enable the existing threaded WASM, not to build a new threading system around it.
+Ruthless Prioritization - What to IGNORE for MVP (YAGNI List - Adjusted for Bundling Strategy):
 
-Complex Build Scripts: Manually place files, including any minimal required worker snippets.
+Advanced Threading Management: No custom worker pools, complex inter-worker communication beyond what the WASM module handles internally, or optimization of thread performance. The bundling approach handles threading requirements automatically.
 
-Abstraction Layers: Direct use of APIs.
+Complex Build Optimization: Use basic Rollup configuration without advanced optimizations like tree-shaking, code splitting, or minification until the basic bundling works.
 
-State Persistence.
+Dynamic Module Loading: No runtime module resolution or lazy loading. Everything is pre-bundled into a single module.
 
-Advanced UI/UX.
+Abstraction Layers: Direct use of Chrome extension APIs and bundled WASM functions.
 
-Comprehensive Error Handling & Recovery: Basic try/catch and logging, especially around WASM init and COI checks.
+State Persistence: No local storage or session management.
 
-Performance Monitoring/Optimization.
+Advanced UI/UX: Basic button and status display only.
 
-Placeholders for Future Features not strictly required for the threaded WASM to init.
+Comprehensive Error Handling & Recovery: Basic try/catch and logging, especially around bundle loading and COI checks.
 
-This plan now directly confronts the threaded nature of your WASM module from the outset. The success of Phase 1 (achieving cross-origin isolation) is paramount.
+Performance Monitoring/Optimization: Focus on functionality first.
+
+Alternative Loading Strategies: Don't implement fallback loading mechanisms or multiple bundling approaches.
+
+Placeholders for Future Features not strictly required for the bundled WASM to initialize and run.
+
+Benefits of the Bundling Strategy:
+
+✅ Eliminates dynamic import resolution issues in Chrome MV3
+✅ Resolves all wasm-bindgen snippet imports at build time
+✅ Provides a single, CSP-compliant ES module for loading
+✅ Maintains proper module semantics for threading support
+✅ Avoids runtime fetch() or cross-origin import complications
+✅ Enables proper WASM threading in cross-origin isolated context
+
+This plan now uses a comprehensive bundling strategy that pre-resolves all module loading challenges, making the Chrome MV3 extension loading straightforward and reliable.
