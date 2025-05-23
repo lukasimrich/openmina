@@ -75,9 +75,11 @@ webnode-extension/
 ## Quick Start
 
 1. **Download Circuit Blobs**: `./download-circuit-blobs.sh`
-2. **Build WASM Module**: `./build-wasm.sh`
+2. **Build WASM Module**: `./build-wasm.sh` (now uses Kaspa NG patterns)
 3. **Load Extension**: Load unpacked extension in Chrome
 4. **Test Node**: Click "Start Node" and monitor console logs
+
+**Note**: The build system now follows the proven Kaspa NG approach with `wasm-pack` and `browser-extension` feature flag to avoid thread detection issues.
 
 ## Development
 

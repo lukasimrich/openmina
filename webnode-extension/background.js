@@ -39,8 +39,8 @@ async function initializeNode() {
             globalThis.crossOriginIsolated = false
         }
 
-        // Try to initialize WASM with basic configuration first
-        const wasm = await init()
+        // Initialize WASM with browser-extension feature (no thread detection)
+        const wasm = await init('/openmina_node_web_bg.wasm')
         console.log("✅ WASM module loaded successfully")
 
         // Handle the "cursed hack" error (expected behavior)

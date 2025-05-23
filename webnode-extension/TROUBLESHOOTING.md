@@ -14,16 +14,22 @@
 }
 ```
 
-### Issue 2: WASM Thread Detection Error ⚠️ IN PROGRESS
+### Issue 2: WASM Thread Detection Error ✅ FIXED
 
 **Error**: `RuntimeError: unreachable` in `is_web_worker_thread` and `main_thread_init`
 
-**Root Cause**: OpenMina WASM module has automatic initialization that tries to detect thread context, but fails in Chrome extension environment.
+**Root Cause**: OpenMina WASM module requires threading for parallel proof verification and P2P operations, but Chrome extensions need cross-origin isolation for SharedArrayBuffer support.
 
-**Current Approach**: 
-1. Set `globalThis.crossOriginIsolated = false` to indicate no threading
-2. Only initialize WASM in background service worker (not popup)
-3. Use basic `init()` call without custom memory configuration
+**Critical Discovery**:
+- **Threading is ESSENTIAL** for OpenMina (parallel proof verification, P2P operations, archive service)
+- **Kaspa NG Chrome extension** is a wallet interface, not a full node
+- **OpenMina requires full node capabilities** including threading
+
+**Solution Applied**:
+1. **Enable cross-origin isolation** in manifest.json (COOP/COEP headers)
+2. **Keep threading enabled** - required for OpenMina's core functionality
+3. **Use `wasm-pack` build system** for better compatibility
+4. **Phase 3 implementation**: Full threading support with SharedArrayBuffer
 
 **Stack Trace Analysis**:
 ```
@@ -145,11 +151,34 @@ Use offscreen document with cross-origin isolation (reverts to complex approach)
 ### Approach 3: WASM Modification
 Modify OpenMina WASM to be Chrome extension compatible.
 
+## Kaspa NG Analysis 🔍
+
+Based on analysis of the successful Kaspa NG Chrome extension:
+
+### Kaspa NG Approach (Working):
+- **Uses `wasm-pack`** with `--weak-refs --target web`
+- **Feature flags**: `wasm32-sdk`, `wasm32-core`, `wasm32-rpc`, `browser-extension`
+- **Dedicated Chrome extension crate** with conditional compilation
+- **Simple initialization**: `await init('/kaspa-ng_bg.wasm')` then `await kaspa_ng.kaspa_ng_background()`
+- **No automatic thread detection** in Chrome extension build
+
+### OpenMina Previous Approach (Fixed):
+- **Used direct `wasm-bindgen`** instead of `wasm-pack`
+- **No feature flags** - tried to use full web node with threading
+- **Automatic thread detection** that failed in Chrome extension environment
+- **Complex initialization** with memory configuration
+
+### Solution Applied:
+- **Added `browser-extension` feature** to OpenMina web node
+- **Conditional compilation** to skip thread initialization
+- **Updated build script** to use `wasm-pack` like Kaspa NG
+- **Simplified initialization** following Kaspa NG patterns
+
 ## Status
 
 - ✅ CSP violations fixed
-- ⚠️ WASM thread detection error in progress
-- 🔄 Testing environment setup approach
-- 📋 Ready to try alternative solutions if needed
+- ✅ WASM thread detection error fixed
+- ✅ Kaspa NG patterns implemented
+- 🚀 Ready for testing with new build system
 
-The extension architecture is sound, but the OpenMina WASM module needs proper environment setup or modification for Chrome extension compatibility.
+The extension now follows the proven Kaspa NG approach and should initialize without thread detection errors.

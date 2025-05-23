@@ -42,13 +42,14 @@ echo "📦 Building WASM binary..."
 # Following the exact command from webnode lifecycle documentation
 cargo +nightly build --release --target wasm32-unknown-unknown
 
-echo "🔧 Generating JavaScript bindings..."
+echo "🔧 Generating JavaScript bindings with wasm-pack..."
 
-# Generate JavaScript bindings with --target web (like Kaspa NG)
-# Output to extension directory for direct loading
-wasm-bindgen --target web --keep-debug \
+# Use wasm-pack like Kaspa NG for better compatibility
+# This handles many Chrome extension compatibility issues automatically
+wasm-pack build --weak-refs --target web \
+  --out-name openmina_node_web \
   --out-dir ../../webnode-extension/ \
-  ../../target/wasm32-unknown-unknown/release/openmina_node_web.wasm
+  --features browser-extension
 
 echo "📁 Organizing files..."
 

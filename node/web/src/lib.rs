@@ -23,11 +23,14 @@ use crate::node::P2pTaskRemoteSpawner;
 /// Automatically run after wasm is loaded.
 #[wasm_bindgen(start)]
 fn main() {
+    // Initialize threading - required for OpenMina's parallel processing
     thread::main_thread_init();
+
     wasm_bindgen_futures::spawn_local(async {
         console_error_panic_hook::set_once();
         tracing::initialize(tracing::Level::INFO);
 
+        // Initialize rayon for parallel proof verification
         init_rayon().await.unwrap();
     });
 }
