@@ -1,5 +1,6 @@
 // popup.js - Following Kaspa NG popup pattern
-import init from "./openmina_node_web.js"
+// Note: We don't import the WASM module directly in popup to avoid conflicts
+// The background service worker handles all WASM operations
 
 let localWasmInstance = null
 let localRpcInterface = null
@@ -11,14 +12,16 @@ const statusText = document.getElementById("status-text")
 const statusDetails = document.getElementById("status-details")
 const statusIndicator = document.querySelector(".status-indicator")
 
-// Initialize popup WASM instance (for UI interactions)
-async function initPopupWasm() {
+// Initialize popup (no local WASM instance to avoid conflicts)
+async function initPopup() {
     try {
-        console.log("Initializing popup WASM instance...")
-        localWasmInstance = await init("./openmina_node_web_bg.wasm")
-        console.log("Popup WASM instance ready")
+        console.log("Initializing popup UI...")
+
+        // The popup communicates with the background service worker
+        // which handles all WASM operations to avoid initialization conflicts
+        console.log("Popup ready - all WASM operations handled by background service worker")
     } catch (error) {
-        console.error("Failed to initialize popup WASM:", error)
+        console.error("Failed to initialize popup:", error)
     }
 }
 
@@ -148,5 +151,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 })
 
 // Initialize popup
-initPopupWasm()
+initPopup()
 console.log("OpenMina popup loaded")

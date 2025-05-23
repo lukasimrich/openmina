@@ -32,7 +32,15 @@ async function initializeNode() {
 
         // Initialize WASM module (following Kaspa NG pattern)
         console.log("📦 Loading WASM binary...")
-        const wasm = await init("./openmina_node_web_bg.wasm")
+
+        // Set up environment for OpenMina WASM
+        // The WASM module expects certain global properties
+        if (typeof globalThis.crossOriginIsolated === 'undefined') {
+            globalThis.crossOriginIsolated = false
+        }
+
+        // Try to initialize WASM with basic configuration first
+        const wasm = await init()
         console.log("✅ WASM module loaded successfully")
 
         // Handle the "cursed hack" error (expected behavior)
