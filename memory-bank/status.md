@@ -4,78 +4,103 @@ _Last Updated: December 19, 2024_
 
 ## Current Focus
 
-Building a functional Chrome extension using a comprehensive bundling strategy to load and initialize the threaded OpenMina WASM node in a sidebar UI, with basic interaction capabilities. The new approach uses Rollup to bundle all WASM, JS glue code, and snippets into a single ES module that resolves Chrome MV3 loading challenges.
+🔄 **ARCHITECTURAL PIVOT**: After analyzing the successful Kaspa NG Chrome extension implementation, we have abandoned the complex bundling/offscreen document approach in favor of the proven Kaspa NG patterns. This represents a fundamental shift from experimental approaches to a working foundation.
+
+## Major Decision: Kaspa NG Pattern Adoption
+
+**CRITICAL INSIGHT**: The Kaspa NG Chrome extension successfully runs blockchain WASM in Chrome MV3 using:
+
+-   Direct WASM loading in background service worker and popup
+-   No offscreen document complexity
+-   No complex bundling requirements
+-   Critical `'wasm-unsafe-eval'` CSP directive
+-   Standard ES module imports
 
 ## Task Status
 
-### Phase 1: Core Extension, Sidebar UI & Cross-Origin Isolated Offscreen Document Setup
+### Previous Approach (Superseded by Kaspa NG Pattern)
 
-| Task                                                                 | Status    | Progress | Last Updated      |
-| -------------------------------------------------------------------- | --------- | -------- | ----------------- |
-| Create manifest.json with required permissions and COOP/COEP headers | Completed | 100%     | December 19, 2024 |
-| Create sidebar.html with basic UI elements                           | Completed | 100%     | December 19, 2024 |
-| Create sidebar.js with message handling                              | Completed | 100%     | December 19, 2024 |
-| Create background.js service worker                                  | Completed | 100%     | December 19, 2024 |
-| Create offscreen.html with COOP/COEP headers                         | Completed | 100%     | December 19, 2024 |
-| Create offscreen.js with cross-origin isolation verification         | Completed | 100%     | December 19, 2024 |
-| Test cross-origin isolation in offscreen document                    | Ready     | 0%       | December 19, 2024 |
+| Task                                           | Status     | Progress | Last Updated      |
+| ---------------------------------------------- | ---------- | -------- | ----------------- |
+| Complex bundling strategy with Rollup          | Superseded | N/A      | December 19, 2024 |
+| Offscreen document with cross-origin isolation | Superseded | N/A      | December 19, 2024 |
+| Manual WASM runtime implementation             | Superseded | N/A      | December 19, 2024 |
+| Complex module resolution systems              | Superseded | N/A      | December 19, 2024 |
 
-### Phase 2: Bundled WASM Loading & Basic Initialization
+### New Approach: Kaspa NG Pattern Implementation
 
-| Task                                                           | Status      | Progress | Last Updated      |
-| -------------------------------------------------------------- | ----------- | -------- | ----------------- |
-| Compile WASM with --target web for proper module semantics     | Not Started | 0%       | December 19, 2024 |
-| Set up Rollup bundling environment and dependencies            | Not Started | 0%       | December 19, 2024 |
-| Create index.js entry point for bundling                       | Not Started | 0%       | December 19, 2024 |
-| Configure rollup.config.js with required plugins               | Not Started | 0%       | December 19, 2024 |
-| Build bundled ES module with npx rollup -c                     | Not Started | 0%       | December 19, 2024 |
-| Update manifest.json for bundled file web_accessible_resources | Not Started | 0%       | December 19, 2024 |
-| Implement bundled module loading in offscreen.js               | Not Started | 0%       | December 19, 2024 |
-| Test bundled WASM module loading and initialization            | Not Started | 0%       | December 19, 2024 |
+#### Phase 1: Foundation Setup (Direct WASM Loading)
 
-### Phase 3: Basic UI Feedback
+| Task                                                 | Status      | Progress | Last Updated      |
+| ---------------------------------------------------- | ----------- | -------- | ----------------- |
+| Create manifest.json with 'wasm-unsafe-eval' CSP     | Not Started | 0%       | December 19, 2024 |
+| Create popup.html with basic UI elements             | Not Started | 0%       | December 19, 2024 |
+| Create popup.js with WASM loading (Kaspa NG pattern) | Not Started | 0%       | December 19, 2024 |
+| Create background.js with direct WASM loading        | Not Started | 0%       | December 19, 2024 |
+| Test basic extension loading without CSP violations  | Not Started | 0%       | December 19, 2024 |
+| Test WASM module initialization in background        | Not Started | 0%       | December 19, 2024 |
+| Test popup-background communication                  | Not Started | 0%       | December 19, 2024 |
 
-| Task                                     | Status      | Progress | Last Updated |
-| ---------------------------------------- | ----------- | -------- | ------------ |
-| Implement status updates from WASM to UI | Not Started | 0%       | May 21, 2023 |
-| Add error handling and display in UI     | Not Started | 0%       | May 21, 2023 |
-| Test end-to-end communication flow       | Not Started | 0%       | May 21, 2023 |
+#### Phase 2: OpenMina WASM Integration
+
+| Task                                             | Status      | Progress | Last Updated      |
+| ------------------------------------------------ | ----------- | -------- | ----------------- |
+| Compile OpenMina WASM with --target web          | Not Started | 0%       | December 19, 2024 |
+| Set up OpenMina-specific configuration loading   | Not Started | 0%       | December 19, 2024 |
+| Implement OpenMina node initialization           | Not Started | 0%       | December 19, 2024 |
+| Handle "cursed hack" errors as expected behavior | Not Started | 0%       | December 19, 2024 |
+| Test RPC interface and status queries            | Not Started | 0%       | December 19, 2024 |
+| Verify circuit blob and supporting file loading  | Not Started | 0%       | December 19, 2024 |
+
+#### Phase 3: Threading Support (Conditional)
+
+| Task                                             | Status      | Progress | Last Updated      |
+| ------------------------------------------------ | ----------- | -------- | ----------------- |
+| Implement threading detection                    | Not Started | 0%       | December 19, 2024 |
+| Add cross-origin isolation if threading required | Not Started | 0%       | December 19, 2024 |
+| Test SharedArrayBuffer availability              | Not Started | 0%       | December 19, 2024 |
+| Verify worker thread functionality               | Not Started | 0%       | December 19, 2024 |
 
 ## Active Decisions & Considerations
 
-| Decision/Consideration                   | Status                      | Last Updated      |
-| ---------------------------------------- | --------------------------- | ----------------- |
-| Bundling strategy with Rollup            | Decided - Implemented       | December 19, 2024 |
-| WASM compilation target (--target web)   | Decided                     | December 19, 2024 |
-| Chrome MV3 loading approach              | Decided - Bundle Everything | December 19, 2024 |
-| Error handling strategy for bundled WASM | Under Consideration         | December 19, 2024 |
+| Decision/Consideration       | Status                        | Last Updated      |
+| ---------------------------- | ----------------------------- | ----------------- |
+| Architectural approach       | Decided - Kaspa NG Pattern    | December 19, 2024 |
+| WASM loading strategy        | Decided - Direct ES Module    | December 19, 2024 |
+| Chrome MV3 CSP configuration | Decided - 'wasm-unsafe-eval'  | December 19, 2024 |
+| UI approach                  | Decided - Popup (not sidebar) | December 19, 2024 |
+| Threading support            | Conditional - Add if needed   | December 19, 2024 |
+| Bundling strategy            | Superseded - Not needed       | December 19, 2024 |
+| Offscreen document           | Superseded - Not needed       | December 19, 2024 |
 
 ## Next Steps
 
-| Task                                            | Target Date | Priority | Dependencies              |
-| ----------------------------------------------- | ----------- | -------- | ------------------------- |
-| Set up basic extension structure                | TBD         | High     | None                      |
-| Implement and test cross-origin isolation       | TBD         | High     | Basic extension structure |
-| Set up Rollup bundling environment              | TBD         | High     | None                      |
-| Create bundling configuration files             | TBD         | High     | Rollup environment        |
-| Test bundled WASM loading in offscreen document | TBD         | High     | Bundling setup complete   |
+| Task                                             | Target Date | Priority | Dependencies              |
+| ------------------------------------------------ | ----------- | -------- | ------------------------- |
+| Implement Kaspa NG pattern manifest.json         | TBD         | High     | None                      |
+| Create popup UI following Kaspa NG design        | TBD         | High     | Manifest setup            |
+| Implement direct WASM loading in background      | TBD         | High     | Basic extension structure |
+| Test OpenMina WASM compilation with --target web | TBD         | High     | WASM loading working      |
+| Integrate OpenMina configuration and lifecycle   | TBD         | Medium   | WASM compilation          |
 
 ## Known Challenges
 
-| Challenge                            | Impact                        | Mitigation Strategy                                           | Last Updated      |
-| ------------------------------------ | ----------------------------- | ------------------------------------------------------------- | ----------------- |
-| Cross-origin isolation configuration | High - Required for threading | Follow established patterns in manifest.json and HTML headers | May 21, 2023      |
-| WASM threading support               | High - Core functionality     | Use bundling strategy to pre-resolve all module dependencies  | December 19, 2024 |
-| Chrome extension CSP restrictions    | Medium                        | Use bundled ES modules and web_accessible_resources           | December 19, 2024 |
-| Dynamic import resolution in MV3     | High - Blocks WASM loading    | RESOLVED: Use Rollup bundling to eliminate dynamic imports    | December 19, 2024 |
-| wasm-bindgen snippet imports         | High - Module loading fails   | RESOLVED: Bundle all snippets at build time                   | December 19, 2024 |
+| Challenge                         | Impact                      | Mitigation Strategy                                       | Last Updated      |
+| --------------------------------- | --------------------------- | --------------------------------------------------------- | ----------------- |
+| Chrome extension CSP restrictions | High - Blocks WASM loading  | RESOLVED: Use 'wasm-unsafe-eval' CSP directive            | December 19, 2024 |
+| Dynamic import resolution in MV3  | High - Blocks WASM loading  | RESOLVED: Use direct ES module imports (Kaspa NG pattern) | December 19, 2024 |
+| wasm-bindgen snippet imports      | Medium - Module loading     | Use standard --target web compilation                     | December 19, 2024 |
+| OpenMina "cursed hack" errors     | Low - Expected behavior     | Handle as normal operation, not actual errors             | December 19, 2024 |
+| Circuit blob file loading         | Medium - Node functionality | Ensure proper file structure and web_accessible_resources | December 19, 2024 |
+| Threading support (if required)   | Medium - Conditional        | Add cross-origin isolation only if threading is needed    | December 19, 2024 |
 
 ## Learnings & Insights
 
-| Learning                                                                              | Discovery Date    | Project Impact                      | Last Updated      |
-| ------------------------------------------------------------------------------------- | ----------------- | ----------------------------------- | ----------------- |
-| Chrome MV3 extensions require both manifest-level and HTML meta tag COOP/COEP headers | May 21, 2023      | Critical for threading support      | May 21, 2023      |
-| Service workers aren't cross-origin isolated, requiring offscreen document approach   | May 21, 2023      | Defines core architecture           | May 21, 2023      |
-| Rollup bundling resolves all Chrome MV3 WASM loading challenges                       | December 19, 2024 | Eliminates import resolution issues | December 19, 2024 |
-| --target web maintains proper module semantics for wasm-bindgen threading             | December 19, 2024 | Enables proper WASM compilation     | December 19, 2024 |
-| Bundling strategy avoids CSP violations while preserving WASM functionality           | December 19, 2024 | Core technical approach             | December 19, 2024 |
+| Learning                                                                       | Discovery Date    | Project Impact                         | Last Updated      |
+| ------------------------------------------------------------------------------ | ----------------- | -------------------------------------- | ----------------- |
+| Kaspa NG Chrome extension successfully runs blockchain WASM in Chrome MV3      | December 19, 2024 | Provides proven architectural pattern  | December 19, 2024 |
+| 'wasm-unsafe-eval' CSP directive is essential for WASM loading in Chrome MV3   | December 19, 2024 | Critical for WASM functionality        | December 19, 2024 |
+| Direct WASM loading in service worker and popup works without complex bundling | December 19, 2024 | Eliminates need for complex solutions  | December 19, 2024 |
+| Offscreen documents are not required for basic WASM loading in Chrome MV3      | December 19, 2024 | Simplifies architecture significantly  | December 19, 2024 |
+| Standard ES module imports work reliably for WASM in Chrome extensions         | December 19, 2024 | Enables straightforward implementation | December 19, 2024 |
+| Complex bundling strategies may be unnecessary for Chrome MV3 WASM loading     | December 19, 2024 | Reduces development complexity         | December 19, 2024 |
