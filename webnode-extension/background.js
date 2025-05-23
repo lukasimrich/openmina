@@ -1,53 +1,69 @@
-// background.js
-const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
+// background.js - Following Kaspa NG pattern
+import init from "./openmina_node_web.js"
 
-async function hasOffscreenDocument() {
-  const offscreenUrl = chrome.runtime.getURL(OFFSCREEN_DOCUMENT_PATH);
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT'],
-    documentUrls: [offscreenUrl]
-  });
-  return existingContexts.length > 0;
-}
+let nodeInstance = null
+let rpcInterface = null
 
-async function setupOffscreenDocument() {
-  if (await hasOffscreenDocument()) {
-    return;
-  }
-  
-  await chrome.offscreen.createDocument({
-    url: OFFSCREEN_DOCUMENT_PATH,
-    reasons: ['WORKERS'],
-    justification: 'Required for cross-origin isolated WASM threading'
-  });
-}
-
-chrome.action.onClicked.addListener(async (tab) => {
-  await chrome.sidePanel.open({ windowId: tab.windowId });
-});
-
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.type === "INIT_WASM_REQUEST") {
-    console.log("Background: Received INIT_WASM_REQUEST");
-    
+async function initializeNode() {
     try {
-      await setupOffscreenDocument();
-      console.log("Background: Offscreen document setup complete");
-      
-      // Forward the request to the offscreen document
-      chrome.runtime.sendMessage({ type: "INIT_WASM_IN_OFFSCREEN" });
-      
+        console.log("Initializing OpenMina WASM module...")
+
+        // Initialize WASM module (following Kaspa NG pattern)
+        const wasm = await init("./openmina_node_web_bg.wasm")
+
+        // Configure node parameters (based on OpenMina lifecycle)
+        const config = {
+            blockProducerKey: null, // Non-block-producing node for MVP
+            seedNodesUrl: "https://bootnodes.minaprotocol.com/networks/devnet-webrtc.txt",
+        }
+
+        // Start node (following OpenMina run() pattern)
+        rpcInterface = await wasm.run(
+            config.blockProducerKey,
+            config.seedNodesUrl,
+            null // genesis config URL
+        )
+
+        nodeInstance = wasm
+        console.log("OpenMina node initialized successfully")
+
+        // Notify popup of successful initialization
+        chrome.runtime.sendMessage({
+            type: "NODE_INITIALIZED",
+            payload: "Node running",
+        })
     } catch (error) {
-      console.error("Background: Error setting up offscreen document:", error);
-      chrome.runtime.sendMessage({ 
-        type: "NODE_ERROR_UPDATE", 
-        payload: `Setup Error: ${error.message}` 
-      });
+        console.error("Failed to initialize OpenMina node:", error)
+        chrome.runtime.sendMessage({
+            type: "NODE_ERROR",
+            payload: error.message,
+        })
     }
-  }
-  
-  // Forward status updates from offscreen to sidebar
-  if (message.type === "NODE_STATUS_UPDATE" || message.type === "NODE_ERROR_UPDATE") {
-    chrome.runtime.sendMessage(message);
-  }
-});
+}
+
+// Message handling for popup communication
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    switch (message.type) {
+        case "INIT_NODE":
+            initializeNode()
+            sendResponse({ status: "initializing" })
+            break
+
+        case "GET_STATUS":
+            if (rpcInterface) {
+                rpcInterface.get_status().then((status) => {
+                    sendResponse({ status })
+                })
+            } else {
+                sendResponse({ error: "Node not initialized" })
+            }
+            break
+
+        default:
+            sendResponse({ error: "Unknown message type" })
+    }
+
+    return true // Keep message channel open for async response
+})
+
+console.log("OpenMina background service worker loaded")

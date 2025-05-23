@@ -1,36 +1,30 @@
 {
-  "manifest_version": 3,
-  "name": "OpenMina MVP Ext (Threaded)",
-  "version": "0.1.0",
-  "description": "MVP for Threaded OpenMina WASM Node with Sidebar UI",
-  "permissions": [
-    "offscreen",
-    "sidePanel"
-  ],
-  "side_panel": {
-    "default_path": "sidebar.html"
-  },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "action": {
-    "default_title": "Open OpenMina MVP"
-  },
-  "cross_origin_opener_policy": {
-    "value": "same-origin"
-  },
-  "cross_origin_embedder_policy": {
-    "value": "require-corp"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "offscreen.html",
-        "sidebar.html",
-        "dist/bundle.js",
-        "dist/openmina_node_web_bg.wasm"
-      ],
-      "matches": ["<all_urls>"]
-    }
-  ]
+    "manifest_version": 3,
+    "name": "OpenMina Node",
+    "version": "0.1.0",
+    "description": "OpenMina blockchain node in browser",
+
+    "permissions": ["scripting", "alarms", "storage", "activeTab"],
+    "host_permissions": ["https://*/*", "http://*/*"],
+
+    "content_security_policy": {
+        "extension_pages": "default-src 'self' 'wasm-unsafe-eval'; connect-src 'self' *"
+    },
+
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "OpenMina Node"
+    },
+
+    "web_accessible_resources": [
+        {
+            "resources": ["openmina_node_web.js", "openmina_node_web_bg.wasm", "snippets/*"],
+            "matches": ["<all_urls>"]
+        }
+    ]
 }
