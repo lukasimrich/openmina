@@ -23,7 +23,13 @@
 
     "web_accessible_resources": [
         {
-            "resources": ["openmina_node_web.js", "openmina_node_web_bg.wasm", "snippets/*"],
+            "resources": [
+                "openmina_node_web.js",
+                "openmina_node_web_bg.wasm",
+                "snippets/*",
+                "circuit-blobs/*",
+                "config/*"
+            ],
             "matches": ["<all_urls>"]
         }
     ]
