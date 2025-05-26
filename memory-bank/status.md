@@ -1,74 +1,82 @@
 # OpenMina Chrome Extension: MVP Implementation Status
 
-_Last Updated: December 19, 2024_
+_Last Updated: December 19, 2024
+
+**MEMORY BANK UPDATED**: Comprehensive analysis complete, new tab approach selected, detailed implementation plan created. Ready to begin Phase 1 implementation._
 
 ## Current Focus
 
-✅ **PHASE 2 COMPLETE**: Successfully implemented comprehensive bundling strategy for Chrome MV3 extension. The extension now uses Rollup to bundle all WASM, JS glue code, and snippets into a single ES module, resolving all Chrome MV3 loading challenges. Ready for testing and Phase 3 implementation.
+✅ **PHASE 1 COMPLETE - READY FOR PHASE 2**: Basic extension structure implemented with new tab approach. All core files created with proper cross-origin isolation. Ready to integrate OpenMina assets and test WASM loading.
 
 ## Task Status
 
-### Phase 1: Core Extension, Sidebar UI & Cross-Origin Isolated Offscreen Document Setup
+### Phase 1: Extension Structure & New Tab Setup
 
-| Task                                                                 | Status    | Progress | Last Updated      |
-| -------------------------------------------------------------------- | --------- | -------- | ----------------- |
-| Create manifest.json with required permissions and COOP/COEP headers | Completed | 100%     | December 19, 2024 |
-| Create sidebar.html with basic UI elements                           | Completed | 100%     | December 19, 2024 |
-| Create sidebar.js with message handling                              | Completed | 100%     | December 19, 2024 |
-| Create background.js service worker                                  | Completed | 100%     | December 19, 2024 |
-| Create offscreen.html with COOP/COEP headers                         | Completed | 100%     | December 19, 2024 |
-| Create offscreen.js with cross-origin isolation verification         | Completed | 100%     | December 19, 2024 |
-| Test cross-origin isolation in offscreen document                    | Ready     | 0%       | December 19, 2024 |
+| Task                                                                 | Status      | Progress | Last Updated      |
+| -------------------------------------------------------------------- | ----------- | -------- | ----------------- |
+| Create manifest.json with COOP/COEP headers for new tab approach    | Completed   | 100%     | December 19, 2024 |
+| Create popup.html for extension control interface                    | Completed   | 100%     | December 19, 2024 |
+| Create popup.js with tab management logic                            | Completed   | 100%     | December 19, 2024 |
+| Create background.js service worker for tab lifecycle management     | Completed   | 100%     | December 19, 2024 |
+| Create webnode.html that replicates working OpenMina index.html      | Completed   | 100%     | December 19, 2024 |
+| Create webnode.js with OpenMina initialization logic                 | Completed   | 100%     | December 19, 2024 |
+| Test cross-origin isolation in new tab (self.crossOriginIsolated)    | Ready       | 0%       | December 19, 2024 |
 
-### Phase 2: Bundled WASM Loading & Basic Initialization
+### Phase 2: OpenMina Asset Integration & Loading
 
-| Task                                                           | Status    | Progress | Last Updated      |
-| -------------------------------------------------------------- | --------- | -------- | ----------------- |
-| Compile WASM with --target web for proper module semantics     | Completed | 100%     | December 19, 2024 |
-| Set up Rollup bundling environment and dependencies            | Completed | 100%     | December 19, 2024 |
-| Create index.js entry point for bundling                       | Completed | 100%     | December 19, 2024 |
-| Configure rollup.config.js with required plugins               | Completed | 100%     | December 19, 2024 |
-| Build bundled ES module with npx rollup -c                     | Completed | 100%     | December 19, 2024 |
-| Update manifest.json for bundled file web_accessible_resources | Completed | 100%     | December 19, 2024 |
-| Implement bundled module loading in offscreen.js               | Completed | 100%     | December 19, 2024 |
-| Test bundled WASM module loading and initialization            | Ready     | 0%       | December 19, 2024 |
+| Task                                                           | Status      | Progress | Last Updated      |
+| -------------------------------------------------------------- | ----------- | -------- | ----------------- |
+| Copy exact OpenMina asset structure to extension              | Ready       | 0%       | December 19, 2024 |
+| Implement exact working loading mechanism in webnode.html     | Ready       | 0%       | December 19, 2024 |
+| Create webnode.js that replicates WebNodeService logic        | Ready       | 0%       | December 19, 2024 |
+| Configure web_accessible_resources for all OpenMina assets    | Ready       | 0%       | December 19, 2024 |
+| Test WASM module loading with dynamic import                  | Ready       | 0%       | December 19, 2024 |
+| Test SharedArrayBuffer availability and threading             | Ready       | 0%       | December 19, 2024 |
+| Verify OpenMina node initialization and P2P connection        | Ready       | 0%       | December 19, 2024 |
 
-### Phase 3: Basic UI Feedback
+### Phase 3: Tab Lifecycle & Communication
 
-| Task                                     | Status      | Progress | Last Updated |
-| ---------------------------------------- | ----------- | -------- | ------------ |
-| Implement status updates from WASM to UI | Not Started | 0%       | May 21, 2023 |
-| Add error handling and display in UI     | Not Started | 0%       | May 21, 2023 |
-| Test end-to-end communication flow       | Not Started | 0%       | May 21, 2023 |
+| Task                                                    | Status      | Progress | Last Updated      |
+| ------------------------------------------------------- | ----------- | -------- | ----------------- |
+| Implement tab auto-recovery on accidental closure      | Ready       | 0%       | December 19, 2024 |
+| Add tab close protection warnings                      | Ready       | 0%       | December 19, 2024 |
+| Create popup ↔ webnode tab communication bridge        | Ready       | 0%       | December 19, 2024 |
+| Implement node status updates in popup interface       | Ready       | 0%       | December 19, 2024 |
+| Add basic state persistence for node recovery          | Ready       | 0%       | December 19, 2024 |
+| Test complete end-to-end user workflow                 | Ready       | 0%       | December 19, 2024 |
 
 ## Active Decisions & Considerations
 
 | Decision/Consideration                   | Status                      | Last Updated      |
 | ---------------------------------------- | --------------------------- | ----------------- |
-| Bundling strategy with Rollup            | Decided - Implemented       | December 19, 2024 |
-| WASM compilation target (--target web)   | Decided                     | December 19, 2024 |
-| Chrome MV3 loading approach              | Decided - Bundle Everything | December 19, 2024 |
-| Error handling strategy for bundled WASM | Under Consideration         | December 19, 2024 |
+| **Architecture: New Tab vs Offscreen**  | **Decided - New Tab**       | December 19, 2024 |
+| Cross-origin isolation approach         | Decided - Manifest headers  | December 19, 2024 |
+| Asset loading strategy                   | Decided - Direct replication| December 19, 2024 |
+| Tab lifecycle management                 | Decided - Auto-recovery     | December 19, 2024 |
+| User experience approach                 | Decided - Background tab    | December 19, 2024 |
+| State persistence strategy               | Under Consideration         | December 19, 2024 |
 
 ## Next Steps
 
 | Task                                            | Target Date | Priority | Dependencies              |
 | ----------------------------------------------- | ----------- | -------- | ------------------------- |
-| Set up basic extension structure                | TBD         | High     | None                      |
-| Implement and test cross-origin isolation       | TBD         | High     | Basic extension structure |
-| Set up Rollup bundling environment              | TBD         | High     | None                      |
-| Create bundling configuration files             | TBD         | High     | Rollup environment        |
-| Test bundled WASM loading in offscreen document | TBD         | High     | Bundling setup complete   |
+| **Phase 1: Create basic extension structure**  | Immediate   | High     | None                      |
+| Implement manifest.json with COOP/COEP         | Immediate   | High     | Extension structure       |
+| Create popup interface and tab management      | Immediate   | High     | Manifest complete         |
+| **Phase 2: Replicate OpenMina environment**    | Next        | High     | Phase 1 complete          |
+| Copy OpenMina assets and implement loading     | Next        | High     | Tab creation working      |
+| Test cross-origin isolation and threading      | Next        | High     | Asset loading complete    |
+| **Phase 3: Polish and lifecycle management**   | Final       | Medium   | Phase 2 complete          |
 
 ## Known Challenges
 
 | Challenge                            | Impact                        | Mitigation Strategy                                           | Last Updated      |
 | ------------------------------------ | ----------------------------- | ------------------------------------------------------------- | ----------------- |
-| Cross-origin isolation configuration | High - Required for threading | Follow established patterns in manifest.json and HTML headers | May 21, 2023      |
-| WASM threading support               | High - Core functionality     | Use bundling strategy to pre-resolve all module dependencies  | December 19, 2024 |
-| Chrome extension CSP restrictions    | Medium                        | Use bundled ES modules and web_accessible_resources           | December 19, 2024 |
-| Dynamic import resolution in MV3     | High - Blocks WASM loading    | RESOLVED: Use Rollup bundling to eliminate dynamic imports    | December 19, 2024 |
-| wasm-bindgen snippet imports         | High - Module loading fails   | RESOLVED: Bundle all snippets at build time                   | December 19, 2024 |
+| **Tab visibility to user**          | Medium - UX impact            | Background tab creation, clear labeling, user education      | December 19, 2024 |
+| **Node stops when tab/browser closes** | High - Functionality loss   | Auto-recovery, tab protection warnings, state persistence    | December 19, 2024 |
+| **Asset size and loading time**     | Medium - Performance          | Optimize asset loading, progressive initialization           | December 19, 2024 |
+| **Cross-origin isolation verification** | High - Core requirement    | Comprehensive testing of self.crossOriginIsolated           | December 19, 2024 |
+| **OpenMina asset compatibility**     | High - Functionality         | Exact replication of working asset structure and loading     | December 19, 2024 |
 
 ## Learnings & Insights
 
@@ -80,3 +88,10 @@ _Last Updated: December 19, 2024_
 | --target web maintains proper module semantics for wasm-bindgen threading             | December 19, 2024 | Enables proper WASM compilation     | December 19, 2024 |
 | Bundling strategy avoids CSP violations while preserving WASM functionality           | December 19, 2024 | Core technical approach             | December 19, 2024 |
 | Chrome MV3 requires 'wasm-unsafe-eval' CSP directive for WASM compilation             | December 19, 2024 | Critical for WASM loading           | December 19, 2024 |
+| **ANALYSIS COMPLETE**: Working implementation uses Apache/Angular dev server with COOP/COEP headers | December 19, 2024 | Defines simulated environment approach | December 19, 2024 |
+| OpenMina loads via dynamic import triggered by 'startWebNode' event in index.html     | December 19, 2024 | Core loading mechanism identified   | December 19, 2024 |
+| WASM files are served as static assets with proper MIME types and caching            | December 19, 2024 | Asset serving strategy              | December 19, 2024 |
+| Circuit blobs and worker snippets are downloaded/served from specific directories     | December 19, 2024 | Required asset structure            | December 19, 2024 |
+| **NEW TAB APPROACH**: Only viable option for cross-origin isolation in Chrome extensions | December 19, 2024 | Architectural foundation            | December 19, 2024 |
+| Offscreen documents lack cross-origin isolation and SharedArrayBuffer support         | December 19, 2024 | Eliminates offscreen approach      | December 19, 2024 |
+| Chrome extensions support COOP/COEP via manifest keys for full cross-origin isolation | December 19, 2024 | Enables new tab approach            | December 19, 2024 |
