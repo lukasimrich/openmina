@@ -1,4 +1,4 @@
-// WebNode tab logic - replicates WebNodeService
+// WebNode tab logic - replicates Angular WebNodeService exactly
 class OpenMinaWebNode {
   constructor() {
     this.nodeStatus = 'initializing';
@@ -7,8 +7,9 @@ class OpenMinaWebNode {
     this.statusInterval = null;
     this.logCount = 0;
 
+    // Replicate exact Angular pattern
     this.initializeEnvironment();
-    this.startNode();
+    this.loadWasm();
   }
 
   initializeEnvironment() {
@@ -42,442 +43,216 @@ class OpenMinaWebNode {
     return true;
   }
 
-  async startNode() {
+  // Replicate exact Angular WebNodeService.loadWasm$() pattern
+  async loadWasm() {
     try {
       if (!this.initializeEnvironment()) {
         this.notifyBackgroundError('Environment checks failed');
         return;
       }
 
-      this.updateStatus('initializing', 'Initializing OpenMina WASM...');
-      this.log('Starting OpenMina WASM in main thread...', 'info');
+      // Log environment details for debugging
+      this.logEnvironmentDetails();
 
-      // Initialize WASM in main thread (like Angular frontend)
-      await this.initializeWasm();
+      this.updateStatus('initializing', 'Loading OpenMina WASM module...');
+      this.log('🔄 Loading WASM module (Angular pattern)...', 'info');
 
-      // Start the OpenMina node
-      await this.startOpenMinaNode();
+      // EXACT Angular pattern: dynamic import in main thread
+      this.log('📦 Importing ./assets/webnode/pkg/openmina_node_web.js...', 'info');
+      const wasmModule = await import('./assets/webnode/pkg/openmina_node_web.js');
 
-      // Set up tab close protection
-      this.setupTabProtection();
+      this.log('✅ WASM module imported successfully', 'success');
+
+      // Log WASM module details for debugging
+      this.logWasmModuleDetails(wasmModule);
+
+      // Store globally like Angular: window.webnode = v
+      window.webnode = wasmModule;
+      this.wasmModule = wasmModule;
+
+      // Trigger webNodeLoaded event like Angular
+      this.log('📡 Dispatching webNodeLoaded event...', 'info');
+      window.dispatchEvent(new CustomEvent('webNodeLoaded'));
+
+      // Now start WASM like Angular WebNodeService.startWasm$()
+      await this.startWasm();
 
     } catch (error) {
-      console.error('Error starting node:', error);
-      this.log(`❌ Failed to start node: ${error.message}`, 'error');
-      this.updateStatus('error', 'Failed to start node: ' + error.message);
+      console.error('Error loading WASM:', error);
+      this.log(`❌ Failed to load WASM: ${error.message}`, 'error');
+      this.updateStatus('error', 'Failed to load WASM: ' + error.message);
       this.notifyBackgroundError(error.message);
     }
   }
 
-  async initializeWasm() {
+  // Replicate exact Angular WebNodeService.startWasm$() pattern
+  async startWasm() {
     try {
-      this.log('Loading OpenMina WASM in main thread (Angular pattern)...', 'info');
-      this.updateStatus('initializing', 'Loading OpenMina WASM module...');
+      this.updateStatus('initializing', 'Initializing WASM...');
+      this.log('🚀 Starting WASM (Angular WebNodeService.startWasm$() pattern)...', 'info');
 
-      // CRITICAL FIX: Polyfill missing WorkerGlobalScope constructors
-      // The WASM thread detection needs these to exist for instanceof checks
-      this.setupWorkerGlobalScopePolyfill();
+      // Get the WASM module (should be available from loadWasm)
+      const wasm = window.webnode;
+      if (!wasm) {
+        throw new Error('WASM module not loaded - window.webnode is undefined');
+      }
 
-      // Set up WASM function call interception for debugging
-      this.log('🚀 WASM FUNCTION INTERCEPTION ENABLED - CACHE REFRESH TEST', 'info');
-      this.log('If you see this message, the cache has been refreshed successfully', 'success');
+      this.log('📋 WASM module available, initializing...', 'info');
 
-      // Replicate exact Angular frontend pattern
-      // Dynamic import of WASM module in main thread
-      const wasmModule = await import('./assets/webnode/pkg/openmina_node_web.js');
-      this.log('✅ WASM module imported successfully', 'success');
-
-      // CRITICAL: Intercept WASM function calls to see what's actually happening
-      this.interceptWasmFunctions(wasmModule);
-
-      // Initialize WASM with memory (like Angular WebNodeService)
-      this.updateStatus('initializing', 'Initializing WASM with memory...');
-      this.log('Initializing WASM with SharedArrayBuffer memory...', 'info');
-
-      // Create memory exactly like Angular frontend
-      const memory = new WebAssembly.Memory({
+      // EXACT Angular memory configuration
+      const memory = {
         initial: 32,    // 32 pages (2MB)
         maximum: 65536, // 65536 pages (4GB)
         shared: true    // Critical for threading
-      });
+      };
 
-      // Initialize WASM (exact same call as Angular)
-      this.log('About to call wasmModule.default() - this is where thread detection happens...', 'info');
-      this.log('If this fails with "unreachable", the polyfill needs adjustment', 'warning');
+      this.log('🧠 Creating WebAssembly.Memory with Angular config...', 'info');
+      this.log(`Memory config: initial=${memory.initial}, maximum=${memory.maximum}, shared=${memory.shared}`, 'info');
 
-      await wasmModule.default(undefined, memory);
-      this.log('✅ WASM initialized successfully in main thread', 'success');
-      this.log('🎉 Thread detection polyfill worked! WASM accepts main thread context.', 'success');
+      const wasmMemory = new WebAssembly.Memory(memory);
+      this.log('✅ WebAssembly.Memory created successfully', 'success');
 
-      // Store WASM module for later use
-      this.wasmModule = wasmModule;
-      window.webnode = wasmModule; // Make available globally like Angular
+      // EXACT Angular call: wasm.default(undefined, new WebAssembly.Memory(this.memory))
+      this.log('🔄 Calling wasm.default(undefined, memory) - EXACT Angular pattern...', 'info');
+      this.log('This is where thread detection happens in OpenMina WASM', 'info');
 
-      return wasmModule;
+      await wasm.default(undefined, wasmMemory);
+
+      this.log('🎉 WASM initialized successfully! Thread detection worked!', 'success');
+      this.log('✅ OpenMina WASM is ready for node startup', 'success');
+
+      // Now start the OpenMina node (exact Angular pattern)
+      await this.startOpenMinaNode(wasm);
 
     } catch (error) {
-      console.error('Failed to initialize WASM:', error);
-
-      // Enhanced error logging for thread detection issues
-      this.log('=== WASM INITIALIZATION FAILURE ANALYSIS ===', 'error');
+      console.error('Failed to start WASM:', error);
+      this.log('=== WASM STARTUP FAILURE ANALYSIS ===', 'error');
       this.log(`Error name: ${error.name}`, 'error');
       this.log(`Error message: ${error.message}`, 'error');
       this.log(`Error stack: ${error.stack}`, 'error');
 
       // Check if this is the thread detection error
-      if (error.message.includes('unreachable') && error.stack.includes('is_web_worker_thread')) {
-        this.log('CONFIRMED: This is the thread detection error in is_web_worker_thread', 'error');
-        this.log('The WASM is failing to determine execution context despite polyfills', 'error');
-
-        // Re-verify our polyfills are still in place
-        this.log('RE-VERIFYING POLYFILLS AT ERROR TIME:', 'error');
-        this.log(`- typeof WorkerGlobalScope: ${typeof WorkerGlobalScope}`, 'error');
-        this.log(`- typeof DedicatedWorkerGlobalScope: ${typeof DedicatedWorkerGlobalScope}`, 'error');
-
-        try {
-          this.log(`- self instanceof WorkerGlobalScope: ${self instanceof WorkerGlobalScope}`, 'error');
-        } catch (e) {
-          this.log(`- instanceof WorkerGlobalScope failed: ${e.message}`, 'error');
-        }
-
-        try {
-          this.log(`- self instanceof DedicatedWorkerGlobalScope: ${self instanceof DedicatedWorkerGlobalScope}`, 'error');
-        } catch (e) {
-          this.log(`- instanceof DedicatedWorkerGlobalScope failed: ${e.message}`, 'error');
-        }
+      if (error.message.includes('unreachable')) {
+        this.log('🔴 CONFIRMED: Thread detection error in OpenMina WASM', 'error');
+        this.log('The WASM cannot determine execution context in Chrome extension', 'error');
+        this.log('This is the core blocker that needs investigation', 'error');
       }
 
       this.log('=== END FAILURE ANALYSIS ===', 'error');
-      this.log(`❌ Failed to initialize WASM: ${error.message}`, 'error');
       throw error;
     }
   }
 
-  setupWorkerGlobalScopePolyfill() {
-    this.log('=== DETAILED THREAD DETECTION ANALYSIS ===', 'info');
+  // Add comprehensive environment logging for debugging
+  logEnvironmentDetails() {
+    this.log('=== ENVIRONMENT ANALYSIS FOR DEBUGGING ===', 'info');
 
-    // 1. Analyze current global environment
-    this.log('1. CURRENT GLOBAL ENVIRONMENT:', 'info');
+    // Basic environment
+    this.log('1. BASIC ENVIRONMENT:', 'info');
     this.log(`   - typeof self: ${typeof self}`, 'info');
     this.log(`   - typeof window: ${typeof window}`, 'info');
     this.log(`   - typeof globalThis: ${typeof globalThis}`, 'info');
     this.log(`   - self === window: ${self === window}`, 'info');
-    this.log(`   - self === globalThis: ${self === globalThis}`, 'info');
     this.log(`   - self.constructor.name: ${self.constructor.name}`, 'info');
-    this.log(`   - window.constructor.name: ${window.constructor.name}`, 'info');
 
-    // 2. Check existing Worker-related globals
-    this.log('2. EXISTING WORKER GLOBALS:', 'info');
-    this.log(`   - typeof Worker: ${typeof Worker}`, 'info');
+    // Worker-related globals
+    this.log('2. WORKER-RELATED GLOBALS:', 'info');
     this.log(`   - typeof WorkerGlobalScope: ${typeof WorkerGlobalScope}`, 'info');
     this.log(`   - typeof DedicatedWorkerGlobalScope: ${typeof DedicatedWorkerGlobalScope}`, 'info');
-    this.log(`   - typeof SharedWorkerGlobalScope: ${typeof SharedWorkerGlobalScope}`, 'info');
-    this.log(`   - typeof ServiceWorkerGlobalScope: ${typeof ServiceWorkerGlobalScope}`, 'info');
     this.log(`   - typeof importScripts: ${typeof importScripts}`, 'info');
 
-    // 3. Check what globals are available
-    const workerRelatedGlobals = Object.getOwnPropertyNames(window).filter(name =>
-      name.toLowerCase().includes('worker') || name.toLowerCase().includes('global')
-    );
-    this.log(`3. WORKER-RELATED GLOBALS: [${workerRelatedGlobals.join(', ')}]`, 'info');
-
-    // 4. Check prototype chains
-    this.log('4. PROTOTYPE CHAIN ANALYSIS:', 'info');
-    this.log(`   - self.__proto__.constructor.name: ${self.__proto__.constructor.name}`, 'info');
-    this.log(`   - window.__proto__.constructor.name: ${window.__proto__.constructor.name}`, 'info');
-
-    // 5. Test current instanceof behavior (before polyfill)
-    this.log('5. CURRENT INSTANCEOF BEHAVIOR (BEFORE POLYFILL):', 'info');
-    try {
-      const result = self instanceof WorkerGlobalScope;
-      this.log(`   - self instanceof WorkerGlobalScope: ${result}`, 'info');
-    } catch (e) {
-      this.log(`   - self instanceof WorkerGlobalScope: ERROR - ${e.message}`, 'error');
-    }
-
-    try {
-      const result = self instanceof DedicatedWorkerGlobalScope;
-      this.log(`   - self instanceof DedicatedWorkerGlobalScope: ${result}`, 'info');
-    } catch (e) {
-      this.log(`   - self instanceof DedicatedWorkerGlobalScope: ERROR - ${e.message}`, 'error');
-    }
-
-    // 6. Apply polyfills if needed
-    this.log('6. APPLYING POLYFILLS:', 'info');
-
-    if (typeof WorkerGlobalScope === 'undefined') {
-      this.log('   - POLYFILL: Adding missing WorkerGlobalScope constructor', 'info');
-
-      // Create WorkerGlobalScope constructor
-      window.WorkerGlobalScope = function WorkerGlobalScope() {};
-
-      // Set up prototype
-      WorkerGlobalScope.prototype = Object.create(EventTarget.prototype);
-      WorkerGlobalScope.prototype.constructor = WorkerGlobalScope;
-
-      // CRITICAL: Override Symbol.hasInstance to control instanceof behavior
-      Object.defineProperty(WorkerGlobalScope, Symbol.hasInstance, {
-        value: function(instance) {
-          // The WASM checks if 'self' is a WorkerGlobalScope
-          // In main thread: self === window, so this should return FALSE
-          // In worker thread: self !== window, so this should return TRUE
-          const isMainThread = (typeof window !== 'undefined' && instance === window);
-          const result = !isMainThread; // false in main thread, true in worker
-          console.log(`[POLYFILL] WorkerGlobalScope instanceof check: instance=${instance.constructor.name}, isMainThread=${isMainThread}, result=${result}`);
-          console.trace('[POLYFILL] WorkerGlobalScope instanceof call stack');
-          return result;
-        }
-      });
-
-      // Add to global scope
-      self.WorkerGlobalScope = window.WorkerGlobalScope;
-
-      this.log(`   - WorkerGlobalScope created: ${typeof WorkerGlobalScope}`, 'success');
-    } else {
-      this.log('   - WorkerGlobalScope already exists, no polyfill needed', 'info');
-    }
-
-    if (typeof DedicatedWorkerGlobalScope === 'undefined') {
-      this.log('   - POLYFILL: Adding missing DedicatedWorkerGlobalScope constructor', 'info');
-
-      // Create DedicatedWorkerGlobalScope constructor
-      window.DedicatedWorkerGlobalScope = function DedicatedWorkerGlobalScope() {};
-
-      // Set up prototype chain: DedicatedWorkerGlobalScope extends WorkerGlobalScope
-      DedicatedWorkerGlobalScope.prototype = Object.create(WorkerGlobalScope.prototype);
-      DedicatedWorkerGlobalScope.prototype.constructor = DedicatedWorkerGlobalScope;
-
-      // CRITICAL: Override Symbol.hasInstance to control instanceof behavior
-      Object.defineProperty(DedicatedWorkerGlobalScope, Symbol.hasInstance, {
-        value: function(instance) {
-          // The WASM checks if 'self' is a DedicatedWorkerGlobalScope
-          // In main thread: self === window, so this should return FALSE
-          // In worker thread: self !== window, so this should return TRUE
-          const isMainThread = (typeof window !== 'undefined' && instance === window);
-          const result = !isMainThread; // false in main thread, true in worker
-          console.log(`[POLYFILL] DedicatedWorkerGlobalScope instanceof check: instance=${instance.constructor.name}, isMainThread=${isMainThread}, result=${result}`);
-          console.trace('[POLYFILL] DedicatedWorkerGlobalScope instanceof call stack');
-          return result;
-        }
-      });
-
-      // Add to global scope
-      self.DedicatedWorkerGlobalScope = window.DedicatedWorkerGlobalScope;
-
-      this.log(`   - DedicatedWorkerGlobalScope created: ${typeof DedicatedWorkerGlobalScope}`, 'success');
-    } else {
-      this.log('   - DedicatedWorkerGlobalScope already exists, no polyfill needed', 'info');
-    }
-
-    // 7. Verify polyfill results
-    this.log('7. POST-POLYFILL VERIFICATION:', 'info');
-    this.log(`   - typeof WorkerGlobalScope: ${typeof WorkerGlobalScope}`, 'info');
-    this.log(`   - typeof DedicatedWorkerGlobalScope: ${typeof DedicatedWorkerGlobalScope}`, 'info');
-
-    // 8. Test instanceof behavior after polyfill
-    this.log('8. INSTANCEOF BEHAVIOR (AFTER POLYFILL):', 'info');
+    // Test instanceof behavior (what WASM checks)
+    this.log('3. INSTANCEOF CHECKS (WHAT WASM DOES):', 'info');
     try {
       const isWorkerGlobal = self instanceof WorkerGlobalScope;
-      this.log(`   - self instanceof WorkerGlobalScope: ${isWorkerGlobal} (should be FALSE in main thread)`, isWorkerGlobal ? 'warning' : 'success');
+      this.log(`   - self instanceof WorkerGlobalScope: ${isWorkerGlobal}`, 'info');
     } catch (e) {
-      this.log(`   - self instanceof WorkerGlobalScope: ERROR - ${e.message}`, 'error');
+      this.log(`   - WorkerGlobalScope instanceof failed: ${e.message}`, 'error');
     }
 
     try {
       const isDedicatedWorker = self instanceof DedicatedWorkerGlobalScope;
-      this.log(`   - self instanceof DedicatedWorkerGlobalScope: ${isDedicatedWorker} (should be FALSE in main thread)`, isDedicatedWorker ? 'warning' : 'success');
+      this.log(`   - self instanceof DedicatedWorkerGlobalScope: ${isDedicatedWorker}`, 'info');
     } catch (e) {
-      this.log(`   - self instanceof DedicatedWorkerGlobalScope: ERROR - ${e.message}`, 'error');
+      this.log(`   - DedicatedWorkerGlobalScope instanceof failed: ${e.message}`, 'error');
     }
 
-    // 9. Test what WASM will see
-    this.log('9. WHAT WASM WILL SEE:', 'info');
-    this.log(`   - WorkerGlobalScope constructor available: ${typeof WorkerGlobalScope === 'function'}`, 'info');
-    this.log(`   - DedicatedWorkerGlobalScope constructor available: ${typeof DedicatedWorkerGlobalScope === 'function'}`, 'info');
-
-    // Test the exact checks that WASM does
-    try {
-      // This is what the WASM __wbg_instanceof_WorkerGlobalScope function does
-      const wasmWorkerCheck = self instanceof WorkerGlobalScope;
-      this.log(`   - WASM WorkerGlobalScope check result: ${wasmWorkerCheck}`, wasmWorkerCheck ? 'warning' : 'success');
-    } catch (e) {
-      this.log(`   - WASM WorkerGlobalScope check would fail: ${e.message}`, 'error');
-    }
-
-    try {
-      // This is what the WASM __wbg_instanceof_DedicatedWorkerGlobalScope function does
-      const wasmDedicatedCheck = self instanceof DedicatedWorkerGlobalScope;
-      this.log(`   - WASM DedicatedWorkerGlobalScope check result: ${wasmDedicatedCheck}`, wasmDedicatedCheck ? 'warning' : 'success');
-    } catch (e) {
-      this.log(`   - WASM DedicatedWorkerGlobalScope check would fail: ${e.message}`, 'error');
-    }
-
-    this.log('=== END THREAD DETECTION ANALYSIS ===', 'info');
+    this.log('=== END ENVIRONMENT ANALYSIS ===', 'info');
   }
 
-  interceptWasmFunctions(wasmModule) {
-    this.log('=== INTERCEPTING WASM FUNCTION CALLS ===', 'info');
+  // Log WASM module details for debugging
+  logWasmModuleDetails(wasmModule) {
+    this.log('=== WASM MODULE ANALYSIS ===', 'info');
 
-    // Store original functions
-    const originalFunctions = {};
-
-    // Find and intercept the instanceof functions
-    if (wasmModule.__wbg_instanceof_WorkerGlobalScope_b32c94246142a6a7) {
-      originalFunctions.workerGlobalScope = wasmModule.__wbg_instanceof_WorkerGlobalScope_b32c94246142a6a7;
-      wasmModule.__wbg_instanceof_WorkerGlobalScope_b32c94246142a6a7 = (arg0) => {
-        this.log('🔍 WASM CALL: __wbg_instanceof_WorkerGlobalScope_b32c94246142a6a7', 'info');
-        this.log(`   - arg0: ${arg0}`, 'info');
-        this.log(`   - arg0.constructor.name: ${arg0.constructor.name}`, 'info');
-        this.log(`   - arg0 === self: ${arg0 === self}`, 'info');
-        this.log(`   - arg0 === window: ${arg0 === window}`, 'info');
-
-        const result = originalFunctions.workerGlobalScope(arg0);
-        this.log(`   - RESULT: ${result}`, result ? 'warning' : 'success');
-        return result;
-      };
-    } else {
-      this.log('❌ __wbg_instanceof_WorkerGlobalScope function not found', 'error');
-    }
-
-    if (wasmModule.__wbg_instanceof_DedicatedWorkerGlobalScope_8b4095b33f785a6a) {
-      originalFunctions.dedicatedWorkerGlobalScope = wasmModule.__wbg_instanceof_DedicatedWorkerGlobalScope_8b4095b33f785a6a;
-      wasmModule.__wbg_instanceof_DedicatedWorkerGlobalScope_8b4095b33f785a6a = (arg0) => {
-        this.log('🔍 WASM CALL: __wbg_instanceof_DedicatedWorkerGlobalScope_8b4095b33f785a6a', 'info');
-        this.log(`   - arg0: ${arg0}`, 'info');
-        this.log(`   - arg0.constructor.name: ${arg0.constructor.name}`, 'info');
-        this.log(`   - arg0 === self: ${arg0 === self}`, 'info');
-        this.log(`   - arg0 === window: ${arg0 === window}`, 'info');
-
-        const result = originalFunctions.dedicatedWorkerGlobalScope(arg0);
-        this.log(`   - RESULT: ${result}`, result ? 'warning' : 'success');
-        return result;
-      };
-    } else {
-      this.log('❌ __wbg_instanceof_DedicatedWorkerGlobalScope function not found', 'error');
-    }
-
-    // Comprehensive function discovery
     const allFunctions = Object.getOwnPropertyNames(wasmModule);
     const instanceofFunctions = allFunctions.filter(name => name.includes('instanceof'));
     const workerFunctions = allFunctions.filter(name =>
       name.toLowerCase().includes('worker') || name.toLowerCase().includes('global')
     );
 
-    this.log(`🔍 Total WASM functions: ${allFunctions.length}`, 'info');
-    this.log(`🔍 All instanceof functions: [${instanceofFunctions.join(', ')}]`, 'info');
-    this.log(`🔍 All worker-related functions: [${workerFunctions.join(', ')}]`, 'info');
+    this.log(`📋 Total WASM exports: ${allFunctions.length}`, 'info');
+    this.log(`🔍 instanceof functions: [${instanceofFunctions.join(', ')}]`, 'info');
+    this.log(`👷 worker-related functions: [${workerFunctions.join(', ')}]`, 'info');
 
-    // Try to find the actual function names (they might have different hashes)
-    const actualWorkerGlobalScopeFunc = instanceofFunctions.find(name =>
-      name.includes('WorkerGlobalScope')
-    );
-    const actualDedicatedWorkerFunc = instanceofFunctions.find(name =>
-      name.includes('DedicatedWorkerGlobalScope')
-    );
+    // Check for the specific thread detection functions
+    const workerGlobalScopeFunc = instanceofFunctions.find(name => name.includes('WorkerGlobalScope'));
+    const dedicatedWorkerFunc = instanceofFunctions.find(name => name.includes('DedicatedWorkerGlobalScope'));
 
-    if (actualWorkerGlobalScopeFunc) {
-      this.log(`🎯 Found actual WorkerGlobalScope function: ${actualWorkerGlobalScopeFunc}`, 'success');
-    }
-    if (actualDedicatedWorkerFunc) {
-      this.log(`🎯 Found actual DedicatedWorkerGlobalScope function: ${actualDedicatedWorkerFunc}`, 'success');
+    if (workerGlobalScopeFunc) {
+      this.log(`✅ Found WorkerGlobalScope function: ${workerGlobalScopeFunc}`, 'success');
+    } else {
+      this.log('❌ WorkerGlobalScope function not found', 'warning');
     }
 
-    this.log('=== WASM FUNCTION INTERCEPTION COMPLETE ===', 'info');
+    if (dedicatedWorkerFunc) {
+      this.log(`✅ Found DedicatedWorkerGlobalScope function: ${dedicatedWorkerFunc}`, 'success');
+    } else {
+      this.log('❌ DedicatedWorkerGlobalScope function not found', 'warning');
+    }
+
+    this.log('=== END WASM MODULE ANALYSIS ===', 'info');
   }
 
-  setupWasmDebugging() {
-    this.log('=== SETTING UP WASM DEBUGGING INTERCEPTION ===', 'info');
 
-    // Store original functions that WASM will call
-    const originalInstanceofWorkerGlobalScope = window.WorkerGlobalScope;
-    const originalInstanceofDedicatedWorkerGlobalScope = window.DedicatedWorkerGlobalScope;
 
-    // Intercept the instanceof checks that WASM makes
-    // This helps us see exactly what the WASM is trying to do
-
-    // Override the global constructors with logging versions
-    if (typeof WorkerGlobalScope !== 'undefined') {
-      const OriginalWorkerGlobalScope = WorkerGlobalScope;
-      window.WorkerGlobalScope = function WorkerGlobalScope() {
-        console.log('[WASM DEBUG] WorkerGlobalScope constructor called');
-        return OriginalWorkerGlobalScope.apply(this, arguments);
-      };
-
-      // Copy prototype and properties
-      window.WorkerGlobalScope.prototype = OriginalWorkerGlobalScope.prototype;
-      Object.setPrototypeOf(window.WorkerGlobalScope, OriginalWorkerGlobalScope);
-
-      // Override Symbol.hasInstance to log instanceof checks
-      Object.defineProperty(window.WorkerGlobalScope, Symbol.hasInstance, {
-        value: function(instance) {
-          const result = OriginalWorkerGlobalScope[Symbol.hasInstance].call(this, instance);
-          console.log(`[WASM DEBUG] WorkerGlobalScope instanceof check: ${instance.constructor.name} instanceof WorkerGlobalScope = ${result}`);
-          return result;
-        }
-      });
-
-      self.WorkerGlobalScope = window.WorkerGlobalScope;
-    }
-
-    if (typeof DedicatedWorkerGlobalScope !== 'undefined') {
-      const OriginalDedicatedWorkerGlobalScope = DedicatedWorkerGlobalScope;
-      window.DedicatedWorkerGlobalScope = function DedicatedWorkerGlobalScope() {
-        console.log('[WASM DEBUG] DedicatedWorkerGlobalScope constructor called');
-        return OriginalDedicatedWorkerGlobalScope.apply(this, arguments);
-      };
-
-      // Copy prototype and properties
-      window.DedicatedWorkerGlobalScope.prototype = OriginalDedicatedWorkerGlobalScope.prototype;
-      Object.setPrototypeOf(window.DedicatedWorkerGlobalScope, OriginalDedicatedWorkerGlobalScope);
-
-      // Override Symbol.hasInstance to log instanceof checks
-      Object.defineProperty(window.DedicatedWorkerGlobalScope, Symbol.hasInstance, {
-        value: function(instance) {
-          const result = OriginalDedicatedWorkerGlobalScope[Symbol.hasInstance].call(this, instance);
-          console.log(`[WASM DEBUG] DedicatedWorkerGlobalScope instanceof check: ${instance.constructor.name} instanceof DedicatedWorkerGlobalScope = ${result}`);
-          return result;
-        }
-      });
-
-      self.DedicatedWorkerGlobalScope = window.DedicatedWorkerGlobalScope;
-    }
-
-    // Also intercept any direct calls to instanceof
-    const originalInstanceof = Function.prototype.constructor;
-
-    this.log('WASM debugging interception set up - will log all instanceof checks', 'success');
-    this.log('=== END WASM DEBUGGING SETUP ===', 'info');
-  }
-
-  async startOpenMinaNode() {
+  // Replicate exact Angular WebNodeService node startup pattern
+  async startOpenMinaNode(wasm) {
     try {
       this.updateStatus('initializing', 'Starting OpenMina node...');
-      this.log('Starting OpenMina node in main thread...', 'info');
+      this.log('🚀 Starting OpenMina node (Angular pattern)...', 'info');
 
-      if (!this.wasmModule) {
-        throw new Error('WASM module not initialized');
-      }
-
-      // Load configuration
+      // Load configuration (Angular gets this from web-node-secrets.json)
       const config = await this.loadConfiguration();
-      this.log(`Using configuration: ${JSON.stringify(config)}`, 'info');
+      this.log(`📋 Node configuration: ${JSON.stringify(config)}`, 'info');
 
-      // Start the node (exact same call as Angular WebNodeService)
-      this.log('Calling wasm.run() with configuration...', 'info');
-      this.rpc = await this.wasmModule.run(
+      // EXACT Angular call: wasm.run(privateKey, urls.seeds, urls.genesisConfig)
+      this.log('🔄 Calling wasm.run() - EXACT Angular WebNodeService pattern...', 'info');
+      this.log('Parameters:', 'info');
+      this.log(`  - privateKey: ${config.blockProducerKey ? '[REDACTED]' : 'null'}`, 'info');
+      this.log(`  - seedNodesUrl: ${config.seedNodesUrl}`, 'info');
+      this.log(`  - genesisConfigUrl: ${config.genesisConfigUrl || 'null'}`, 'info');
+
+      this.rpc = await wasm.run(
         config.blockProducerKey,
         config.seedNodesUrl,
         config.genesisConfigUrl
       );
 
-      this.log('🎉 OpenMina node started successfully in main thread!', 'success');
+      this.log('🎉 OpenMina node started successfully!', 'success');
+      this.log('✅ RPC interface available for node communication', 'success');
       this.updateStatus('running', 'Node running and connected');
+
+      // Store globally like Angular: window.webnode = webnode
+      window.webnode = this.rpc;
 
       // Notify background script
       chrome.runtime.sendMessage({ type: 'NODE_READY' });
 
       // Start status monitoring
       this.startStatusMonitoring();
+
+      // Set up tab close protection
+      this.setupTabProtection();
 
     } catch (error) {
       console.error('Failed to start OpenMina node:', error);
@@ -659,7 +434,7 @@ class OpenMinaWebNode {
   }
 }
 
-// Main thread approach - replicates Angular frontend pattern
+// Main thread approach - replicates Angular frontend pattern EXACTLY
 
 // Wait for COI Service Worker to be ready before initializing
 document.addEventListener('DOMContentLoaded', async () => {
@@ -671,7 +446,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Wait for service worker to be ready
   await waitForServiceWorkerReady();
 
-  console.log('[OpenMina] COI Service Worker ready, initializing OpenMina...');
+  console.log('[OpenMina] COI Service Worker ready, dispatching startWebNode event...');
+
+  // EXACT Angular pattern: dispatch startWebNode event to trigger loading
+  window.dispatchEvent(new CustomEvent('startWebNode'));
+});
+
+// EXACT Angular pattern: listen for startWebNode event
+window.addEventListener('startWebNode', () => {
+  console.log('[OpenMina] startWebNode event received, initializing OpenMina...');
   window.openMinaWebNode = new OpenMinaWebNode();
 });
 
