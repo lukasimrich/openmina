@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "OpenMina Web Node",
+  "version": "1.0.1",
+  "description": "OpenMina blockchain node running in Chrome",
+
+  "cross_origin_opener_policy": { "value": "same-origin" },
+  "cross_origin_embedder_policy": { "value": "require-corp" },
+
+  "permissions": ["tabs", "storage", "sidePanel"],
+  "action": { "default_title": "Open OpenMina Node" },
+  "side_panel": { "default_path": "popup.html" },
+  "background": { "service_worker": "background.js" },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+
+  "web_accessible_resources": [{
+    "resources": ["webnode.html", "test-main-thread.html", "assets/webnode/**/*", "coi-serviceworker.js", "webnode-worker.js"],
+    "matches": ["<all_urls>"]
+  }]
+
+}

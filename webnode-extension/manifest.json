@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "OpenMina MVP Ext (Threaded)",
+  "version": "0.1.0",
+  "description": "MVP for Threaded OpenMina WASM Node with Sidebar UI",
+  "permissions": [
+    "offscreen",
+    "sidePanel"
+  ],
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open OpenMina MVP"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "cross_origin_opener_policy": {
+    "value": "same-origin"
+  },
+  "cross_origin_embedder_policy": {
+    "value": "require-corp"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "offscreen.html",
+        "sidebar.html",
+        "mina_worker.js",
+        "dist/bundle.js",
+        "dist/worker-bundle.js",
+        "dist/openmina_node_web_bg.wasm"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

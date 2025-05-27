@@ -1,0 +1,20 @@
+{
+  "name": "webnode-extension",
+  "version": "1.0.0",
+  "description": "## Phase 1: Testing Cross-Origin Isolation",
+  "main": "background.js",
+  "scripts": {
+    "build": "npx rollup -c && cp pkg/openmina_node_web_bg.wasm dist/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-wasm": "^6.2.2",
+    "rollup": "^2.79.2",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OpenMina Node</title>
+  <style>
+    body { 
+      width: 300px; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      padding: 16px; 
+      margin: 0;
+      background: #f8f9fa;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .header h3 {
+      margin: 0;
+      color: #333;
+      font-size: 18px;
+    }
+    .status { 
+      margin: 12px 0; 
+      padding: 12px; 
+      border-radius: 6px; 
+      font-weight: 500;
+      text-align: center;
+    }
+    .status.offline { 
+      background: #fee; 
+      color: #c33; 
+      border: 1px solid #fcc;
+    }
+    .status.starting { 
+      background: #fff3cd; 
+      color: #856404; 
+      border: 1px solid #ffeaa7;
+    }
+    .status.online { 
+      background: #d4edda; 
+      color: #155724; 
+      border: 1px solid #c3e6cb;
+    }
+    button { 
+      width: 100%; 
+      padding: 10px; 
+      margin: 6px 0; 
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #0056b3;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #545b62;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #1e7e34;
+    }
+    .node-info { 
+      background: white;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #dee2e6;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
+      font-size: 13px;
+    }
+    .info-label {
+      color: #666;
+    }
+    .info-value {
+      font-weight: 500;
+      color: #333;
+    }
+    .footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #dee2e6;
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h3>🔗 OpenMina Node</h3>
+  </div>
+  
+  <div id="status" class="status offline">
+    Status: Offline
+  </div>
+  
+  <button id="startBtn" class="btn-primary">Start Node</button>
+  <button id="stopBtn" class="btn-secondary" disabled>Stop Node</button>
+  <button id="openDashboard" class="btn-success" disabled>Open Dashboard</button>
+  
+  <div class="node-info">
+    <div class="info-row">
+      <span class="info-label">Peers:</span>
+      <span class="info-value" id="peerCount">0</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Block Height:</span>
+      <span class="info-value" id="blockHeight">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Sync Progress:</span>
+      <span class="info-value" id="syncProgress">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Cross-Origin Isolation:</span>
+      <span class="info-value" id="coiStatus">-</span>
+    </div>
+  </div>
+  
+  <div class="footer">
+    Keep the node tab open for continuous operation
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
