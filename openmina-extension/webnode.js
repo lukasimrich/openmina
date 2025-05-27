@@ -54,6 +54,10 @@ class OpenMinaWebNode {
       // Log environment details for debugging
       this.logEnvironmentDetails();
 
+      // CRITICAL FIX: Add minimal polyfill for missing Worker constructors
+      // Based on our analysis, these are completely missing in Chrome extensions
+      this.addMinimalWorkerPolyfill();
+
       this.updateStatus('initializing', 'Loading OpenMina WASM module...');
       this.log('🔄 Loading WASM module (Angular pattern)...', 'info');
 
@@ -178,6 +182,67 @@ class OpenMinaWebNode {
     }
 
     this.log('=== END ENVIRONMENT ANALYSIS ===', 'info');
+  }
+
+  // TARGETED FIX: Minimal polyfill for missing Worker constructors
+  // Based on our debugging, these are completely missing in Chrome extensions
+  addMinimalWorkerPolyfill() {
+    this.log('=== ADDING MINIMAL WORKER POLYFILL ===', 'info');
+
+    // Only add if missing (which our debugging confirmed they are)
+    if (typeof WorkerGlobalScope === 'undefined') {
+      this.log('🔧 Adding WorkerGlobalScope constructor (missing in Chrome extension)', 'info');
+
+      // Create minimal constructor that WASM can use for instanceof checks
+      window.WorkerGlobalScope = function WorkerGlobalScope() {};
+
+      // Set up basic prototype chain
+      WorkerGlobalScope.prototype = Object.create(EventTarget.prototype);
+      WorkerGlobalScope.prototype.constructor = WorkerGlobalScope;
+
+      // Make available globally
+      self.WorkerGlobalScope = window.WorkerGlobalScope;
+
+      this.log('✅ WorkerGlobalScope polyfill added', 'success');
+    }
+
+    if (typeof DedicatedWorkerGlobalScope === 'undefined') {
+      this.log('🔧 Adding DedicatedWorkerGlobalScope constructor (missing in Chrome extension)', 'info');
+
+      // Create minimal constructor that WASM can use for instanceof checks
+      window.DedicatedWorkerGlobalScope = function DedicatedWorkerGlobalScope() {};
+
+      // Set up prototype chain: DedicatedWorkerGlobalScope extends WorkerGlobalScope
+      DedicatedWorkerGlobalScope.prototype = Object.create(WorkerGlobalScope.prototype);
+      DedicatedWorkerGlobalScope.prototype.constructor = DedicatedWorkerGlobalScope;
+
+      // Make available globally
+      self.DedicatedWorkerGlobalScope = window.DedicatedWorkerGlobalScope;
+
+      this.log('✅ DedicatedWorkerGlobalScope polyfill added', 'success');
+    }
+
+    // Verify the polyfill works
+    this.log('=== POLYFILL VERIFICATION ===', 'info');
+    this.log(`✅ typeof WorkerGlobalScope: ${typeof WorkerGlobalScope}`, 'info');
+    this.log(`✅ typeof DedicatedWorkerGlobalScope: ${typeof DedicatedWorkerGlobalScope}`, 'info');
+
+    // Test instanceof behavior (what WASM will do)
+    try {
+      const isWorkerGlobal = self instanceof WorkerGlobalScope;
+      this.log(`📝 self instanceof WorkerGlobalScope: ${isWorkerGlobal} (should be FALSE in main thread)`, isWorkerGlobal ? 'warning' : 'success');
+    } catch (e) {
+      this.log(`❌ WorkerGlobalScope instanceof still failing: ${e.message}`, 'error');
+    }
+
+    try {
+      const isDedicatedWorker = self instanceof DedicatedWorkerGlobalScope;
+      this.log(`📝 self instanceof DedicatedWorkerGlobalScope: ${isDedicatedWorker} (should be FALSE in main thread)`, isDedicatedWorker ? 'warning' : 'success');
+    } catch (e) {
+      this.log(`❌ DedicatedWorkerGlobalScope instanceof still failing: ${e.message}`, 'error');
+    }
+
+    this.log('=== POLYFILL COMPLETE ===', 'info');
   }
 
   // Log WASM module details for debugging
