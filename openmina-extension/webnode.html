@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OpenMina Node (Keep Open)</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      margin: 0;
+      padding: 20px; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: white;
+    }
+    .container { 
+      max-width: 1000px; 
+      margin: 0 auto; 
+      background: rgba(255, 255, 255, 0.95); 
+      padding: 30px; 
+      border-radius: 12px; 
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      color: #333;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      margin: 0;
+      color: #333;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .header .subtitle {
+      color: #666;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+    .status { 
+      padding: 16px; 
+      margin: 20px 0; 
+      border-radius: 8px; 
+      font-weight: 500;
+      font-size: 16px;
+      text-align: center;
+    }
+    .status.initializing { 
+      background: #fff3cd; 
+      color: #856404; 
+      border: 1px solid #ffeaa7;
+    }
+    .status.running { 
+      background: #d4edda; 
+      color: #155724; 
+      border: 1px solid #c3e6cb;
+    }
+    .status.error { 
+      background: #f8d7da; 
+      color: #721c24; 
+      border: 1px solid #f5c6cb;
+    }
+    .warning { 
+      background: #fff3cd; 
+      border: 1px solid #ffeaa7; 
+      padding: 16px; 
+      border-radius: 8px; 
+      margin: 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .warning-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .node-info { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 16px; 
+      margin: 24px 0; 
+    }
+    .info-card { 
+      background: #f8f9fa; 
+      padding: 16px; 
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      transition: transform 0.2s;
+    }
+    .info-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .info-label { 
+      font-size: 12px; 
+      color: #666; 
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .info-value { 
+      font-size: 20px; 
+      font-weight: 600; 
+      color: #333; 
+    }
+    .info-value.success { color: #28a745; }
+    .info-value.error { color: #dc3545; }
+    .info-value.warning { color: #ffc107; }
+    .logs-container {
+      margin-top: 30px;
+    }
+    .logs-header {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #333;
+    }
+    .logs { 
+      background: #2d3748; 
+      color: #e2e8f0;
+      padding: 16px; 
+      border-radius: 8px; 
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; 
+      font-size: 13px; 
+      max-height: 300px; 
+      overflow-y: auto;
+      border: 1px solid #4a5568;
+    }
+    .log-entry {
+      margin: 4px 0;
+      padding: 2px 0;
+    }
+    .log-entry.info { color: #63b3ed; }
+    .log-entry.success { color: #68d391; }
+    .log-entry.warning { color: #fbb6ce; }
+    .log-entry.error { color: #fc8181; }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #28a745, #20c997);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔗 OpenMina Web Node</h1>
+      <div class="subtitle">Blockchain node running in your browser</div>
+    </div>
+    
+    <div class="warning">
+      <div class="warning-icon">⚠️</div>
+      <div>
+        <strong>Important:</strong> Keep this tab open for your OpenMina node to run. 
+        Closing this tab will stop the node and disconnect from the network.
+      </div>
+    </div>
+    
+    <div id="status" class="status initializing">
+      Initializing OpenMina node...
+    </div>
+    
+    <div class="node-info">
+      <div class="info-card">
+        <div class="info-label">Cross-Origin Isolation</div>
+        <div class="info-value" id="coiStatus">Checking...</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">SharedArrayBuffer</div>
+        <div class="info-value" id="sabStatus">Checking...</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Connected Peers</div>
+        <div class="info-value" id="peerCount">0</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Block Height</div>
+        <div class="info-value" id="blockHeight">-</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Sync Progress</div>
+        <div class="info-value" id="syncProgress">0%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="syncProgressBar"></div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Node Status</div>
+        <div class="info-value" id="nodeStatus">Starting...</div>
+      </div>
+    </div>
+    
+    <div class="logs-container">
+      <div class="logs-header">Node Logs</div>
+      <div id="logs" class="logs">
+        <div class="log-entry info">OpenMina node starting...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exact same loading mechanism as working implementation -->
+  <script type="module" defer>
+    // Replicate exact working loading pattern
+    window.addEventListener('startWebNode', () => {
+      import(chrome.runtime.getURL('assets/webnode/pkg/openmina_node_web.js'))
+        .then((v) => {
+          window.webnode = v;
+          window.dispatchEvent(new CustomEvent('webNodeLoaded'));
+        })
+        .catch((error) => {
+          console.error('Failed to load OpenMina WASM:', error);
+          updateStatus('error', 'Failed to load OpenMina WASM: ' + error.message);
+        });
+    });
+  </script>
+  
+  <script src="webnode.js"></script>
+</body>
+</html>

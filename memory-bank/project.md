@@ -1,7 +1,13 @@
-OpenMina Chrome Extension: MVP Implementation Plan (Threaded WASM Focus)
-Overarching Goal: Achieve a functional Chrome extension capable of loading and initializing the threaded OpenMina WASM node, with the UI presented in a sidebar. Basic interaction (e.g., fetching node status) should be possible.
+OpenMina Chrome Extension: MVP Implementation Plan (New Tab Simulation Approach)
+Overarching Goal: Create a working Chrome extension that opens a new tab with the exact working OpenMina webnode environment, providing full cross-origin isolation and threading support.
 
-Critical Constraint: The only available OpenMina WASM module requires a threading-capable environment.
+Core Strategy: Extension opens a new tab that replicates the proven working OpenMina implementation with proper COOP/COEP headers, SharedArrayBuffer support, and the exact same asset structure and loading mechanism.
+
+Architectural Decision: New Tab vs Offscreen Document
+- ✅ New Tab: Full cross-origin isolation, SharedArrayBuffer support, complete web platform access
+- ❌ Offscreen Document: No cross-origin isolation, no SharedArrayBuffer, limited API access
+
+Critical Requirements: Cross-origin isolation via manifest headers, SharedArrayBuffer for threading, exact replication of working webnode environment.
 
 Core Principles (Laser Focus & Minimalist Approach):
 
@@ -44,35 +50,34 @@ Defer Optimizations: Performance tuning (beyond getting it to run), comprehensiv
 Leverage Past Learnings: Directly apply solutions to previously encountered problems (CSP, COOP/COEP, module loading, offscreen document setup).
 
 Key Milestones & Implementation Steps
-Phase 1: Core Extension, Sidebar UI & Critically Cross-Origin Isolated Offscreen Document Setup
+Phase 1: Extension Structure & New Tab with Cross-Origin Isolation
 
-Objective: Establish the minimal extension structure with a sidebar UI, and a correctly configured offscreen document that achieves self.crossOriginIsolated === true. This is non-negotiable for the threaded WASM.
+Objective: Create minimal extension that opens a new tab with proper cross-origin isolation, replicating the exact working OpenMina environment.
 
-Rationale: The threaded WASM requires SharedArrayBuffer, which is only available in cross-origin isolated contexts.
+Rationale: New tab provides full cross-origin isolation via manifest headers, enabling SharedArrayBuffer and complete OpenMina functionality.
 
-manifest.json (Minimal & Essential for Sidebar & COI):
+manifest.json (New Tab Approach with Cross-Origin Isolation):
 
-manifest_version: 3
+```json
+{
+  "manifest_version": 3,
+  "name": "OpenMina Web Node",
+  "version": "1.0.0",
+  "description": "OpenMina blockchain node running in Chrome",
 
-name: "OpenMina MVP Ext (Threaded)" (Example)
+  "cross_origin_opener_policy": { "value": "same-origin" },
+  "cross_origin_embedder_policy": { "value": "require-corp" },
 
-version: "0.1.0"
+  "permissions": ["tabs", "storage"],
+  "action": { "default_popup": "popup.html" },
+  "background": { "service_worker": "background.js" },
 
-description: "MVP for Threaded OpenMina WASM Node with Sidebar UI"
-
-permissions: ["offscreen", "sidePanel"]
-
-side_panel: { "default_path": "sidebar.html" }
-
-background: {"service_worker": "background.js"}
-
-action: { "default_title": "Open OpenMina MVP" }
-
-cross_origin_opener_policy: {"value": "same-origin"} (Essential for COI)
-
-cross_origin_embedder_policy: {"value": "require-corp"} (Essential for COI)
-
-web_accessible_resources: [{ "resources": ["offscreen.html", "sidebar.html", "dist/bundle.js", "dist/openmina_node_web_bg.wasm"], "matches": ["<all_urls>"] }]
+  "web_accessible_resources": [{
+    "resources": ["webnode.html", "assets/webnode/**/*"],
+    "matches": ["<all_urls>"]
+  }]
+}
+```
 
 Note: The dist/ path contains the bundled ES module and WASM binary. The bundle.js includes all resolved imports and snippets, while the WASM file is served as a static asset.
 
