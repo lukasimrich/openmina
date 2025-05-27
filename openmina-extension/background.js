@@ -1,4 +1,4 @@
-// Background service worker for tab lifecycle management
+// Background service worker for new tab management with COI service worker
 class OpenMinaBackground {
   constructor() {
     this.nodeTabId = null;
@@ -23,7 +23,7 @@ class OpenMinaBackground {
         this.nodeTabId = null;
         this.nodeStatus = 'offline';
         this.notifyStatusChange('offline', 'Node stopped (tab closed)');
-        
+
         // Clear stored tab ID
         chrome.storage.local.set({ nodeTabId: null });
       }
@@ -40,6 +40,16 @@ class OpenMinaBackground {
   }
 
   setupStartupHandlers() {
+    // Handle extension action click (for sidebar)
+    chrome.action.onClicked.addListener(async (tab) => {
+      console.log('Extension action clicked, opening sidebar');
+      try {
+        await chrome.sidePanel.open({ tabId: tab.id });
+      } catch (error) {
+        console.error('Error opening sidebar:', error);
+      }
+    });
+
     // Handle extension startup
     chrome.runtime.onStartup.addListener(() => {
       console.log('Browser restarted, checking for existing node...');
@@ -94,6 +104,11 @@ class OpenMinaBackground {
           sendResponse(status);
           break;
 
+        case 'NODE_TAB_LOADED':
+          console.log('OpenMina node tab loaded');
+          this.nodeStatus = 'ready';
+          break;
+
         case 'NODE_READY':
           // Message from webnode tab when node is ready
           this.nodeStatus = 'online';
@@ -139,8 +154,8 @@ class OpenMinaBackground {
         }
       }
 
-      // Create new node tab
-      console.log('Creating new OpenMina node tab...');
+      // Create new node tab with COI service worker
+      console.log('Creating new OpenMina node tab with COI service worker...');
       const tab = await chrome.tabs.create({
         url: chrome.runtime.getURL('webnode.html'),
         active: false, // Don't steal focus
@@ -169,10 +184,10 @@ class OpenMinaBackground {
       } catch (error) {
         console.log('Tab already closed or error removing:', error);
       }
-      
+
       this.nodeTabId = null;
       this.nodeStatus = 'offline';
-      
+
       // Clear stored tab ID
       await chrome.storage.local.set({ nodeTabId: null });
     }
@@ -186,8 +201,8 @@ class OpenMinaBackground {
     try {
       // Check if tab still exists
       const tab = await chrome.tabs.get(this.nodeTabId);
-      return { 
-        running: true, 
+      return {
+        running: true,
         tabId: this.nodeTabId,
         status: this.nodeStatus,
         url: tab.url

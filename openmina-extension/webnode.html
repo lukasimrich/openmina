@@ -3,21 +3,22 @@
 <head>
   <meta charset="utf-8">
   <title>OpenMina Node (Keep Open)</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval'; object-src 'self'">
   <style>
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      padding: 20px; 
+      padding: 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       color: white;
     }
-    .container { 
-      max-width: 1000px; 
-      margin: 0 auto; 
-      background: rgba(255, 255, 255, 0.95); 
-      padding: 30px; 
-      border-radius: 12px; 
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       color: #333;
     }
@@ -36,34 +37,34 @@
       font-size: 16px;
       margin-top: 8px;
     }
-    .status { 
-      padding: 16px; 
-      margin: 20px 0; 
-      border-radius: 8px; 
+    .status {
+      padding: 16px;
+      margin: 20px 0;
+      border-radius: 8px;
       font-weight: 500;
       font-size: 16px;
       text-align: center;
     }
-    .status.initializing { 
-      background: #fff3cd; 
-      color: #856404; 
+    .status.initializing {
+      background: #fff3cd;
+      color: #856404;
       border: 1px solid #ffeaa7;
     }
-    .status.running { 
-      background: #d4edda; 
-      color: #155724; 
+    .status.running {
+      background: #d4edda;
+      color: #155724;
       border: 1px solid #c3e6cb;
     }
-    .status.error { 
-      background: #f8d7da; 
-      color: #721c24; 
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
       border: 1px solid #f5c6cb;
     }
-    .warning { 
-      background: #fff3cd; 
-      border: 1px solid #ffeaa7; 
-      padding: 16px; 
-      border-radius: 8px; 
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 16px;
+      border-radius: 8px;
       margin: 20px 0;
       display: flex;
       align-items: center;
@@ -73,15 +74,15 @@
       font-size: 24px;
       flex-shrink: 0;
     }
-    .node-info { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-      gap: 16px; 
-      margin: 24px 0; 
+    .node-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
     }
-    .info-card { 
-      background: #f8f9fa; 
-      padding: 16px; 
+    .info-card {
+      background: #f8f9fa;
+      padding: 16px;
       border-radius: 8px;
       border: 1px solid #dee2e6;
       transition: transform 0.2s;
@@ -90,18 +91,18 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .info-label { 
-      font-size: 12px; 
-      color: #666; 
+    .info-label {
+      font-size: 12px;
+      color: #666;
       text-transform: uppercase;
       font-weight: 600;
       letter-spacing: 0.5px;
       margin-bottom: 8px;
     }
-    .info-value { 
-      font-size: 20px; 
-      font-weight: 600; 
-      color: #333; 
+    .info-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
     }
     .info-value.success { color: #28a745; }
     .info-value.error { color: #dc3545; }
@@ -115,14 +116,14 @@
       margin-bottom: 12px;
       color: #333;
     }
-    .logs { 
-      background: #2d3748; 
+    .logs {
+      background: #2d3748;
       color: #e2e8f0;
-      padding: 16px; 
-      border-radius: 8px; 
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; 
-      font-size: 13px; 
-      max-height: 300px; 
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+      max-height: 300px;
       overflow-y: auto;
       border: 1px solid #4a5568;
     }
@@ -156,19 +157,19 @@
       <h1>🔗 OpenMina Web Node</h1>
       <div class="subtitle">Blockchain node running in your browser</div>
     </div>
-    
+
     <div class="warning">
       <div class="warning-icon">⚠️</div>
       <div>
-        <strong>Important:</strong> Keep this tab open for your OpenMina node to run. 
+        <strong>Important:</strong> Keep this tab open for your OpenMina node to run.
         Closing this tab will stop the node and disconnect from the network.
       </div>
     </div>
-    
+
     <div id="status" class="status initializing">
       Initializing OpenMina node...
     </div>
-    
+
     <div class="node-info">
       <div class="info-card">
         <div class="info-label">Cross-Origin Isolation</div>
@@ -198,7 +199,7 @@
         <div class="info-value" id="nodeStatus">Starting...</div>
       </div>
     </div>
-    
+
     <div class="logs-container">
       <div class="logs-header">Node Logs</div>
       <div id="logs" class="logs">
@@ -207,22 +208,10 @@
     </div>
   </div>
 
-  <!-- Exact same loading mechanism as working implementation -->
-  <script type="module" defer>
-    // Replicate exact working loading pattern
-    window.addEventListener('startWebNode', () => {
-      import(chrome.runtime.getURL('assets/webnode/pkg/openmina_node_web.js'))
-        .then((v) => {
-          window.webnode = v;
-          window.dispatchEvent(new CustomEvent('webNodeLoaded'));
-        })
-        .catch((error) => {
-          console.error('Failed to load OpenMina WASM:', error);
-          updateStatus('error', 'Failed to load OpenMina WASM: ' + error.message);
-        });
-    });
-  </script>
-  
+  <!-- Register COI Service Worker for cross-origin isolation (like Angular frontend) -->
+  <script src="coi-serviceworker.js"></script>
+
+  <!-- Load webnode.js which handles WASM loading -->
   <script src="webnode.js"></script>
 </body>
 </html>
