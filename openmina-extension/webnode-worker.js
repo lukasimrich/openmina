@@ -9,6 +9,79 @@ console.log('[Worker] - crossOriginIsolated:', self.crossOriginIsolated);
 console.log('[Worker] - SharedArrayBuffer available:', typeof SharedArrayBuffer !== 'undefined');
 console.log('[Worker] - WebAssembly available:', typeof WebAssembly !== 'undefined');
 
+// CRITICAL: Debug thread detection globals
+console.log('[Worker] === THREAD DETECTION DEBUGGING ===');
+console.log('[Worker] - typeof self:', typeof self);
+console.log('[Worker] - typeof window:', typeof window);
+console.log('[Worker] - typeof globalThis:', typeof globalThis);
+console.log('[Worker] - typeof importScripts:', typeof importScripts);
+console.log('[Worker] - typeof WorkerGlobalScope:', typeof WorkerGlobalScope);
+console.log('[Worker] - typeof DedicatedWorkerGlobalScope:', typeof DedicatedWorkerGlobalScope);
+console.log('[Worker] - self === globalThis:', self === globalThis);
+console.log('[Worker] - self.constructor.name:', self.constructor.name);
+
+// Test instanceof checks that WASM uses
+try {
+  console.log('[Worker] - self instanceof WorkerGlobalScope:', self instanceof WorkerGlobalScope);
+} catch (e) {
+  console.log('[Worker] - WorkerGlobalScope instanceof check failed:', e.message);
+}
+
+try {
+  console.log('[Worker] - self instanceof DedicatedWorkerGlobalScope:', self instanceof DedicatedWorkerGlobalScope);
+} catch (e) {
+  console.log('[Worker] - DedicatedWorkerGlobalScope instanceof check failed:', e.message);
+}
+
+// Check what globals are available
+console.log('[Worker] - Available globals containing "Worker":', Object.getOwnPropertyNames(self).filter(name => name.toLowerCase().includes('worker')));
+console.log('[Worker] - Available globals containing "Global":', Object.getOwnPropertyNames(self).filter(name => name.toLowerCase().includes('global')));
+console.log('[Worker] === END THREAD DETECTION DEBUGGING ===');
+
+// CRITICAL FIX: Polyfill missing worker detection globals
+// The WASM thread detection relies on these instanceof checks
+if (typeof WorkerGlobalScope === 'undefined') {
+  console.log('[Worker] POLYFILL: Adding missing WorkerGlobalScope');
+  self.WorkerGlobalScope = function WorkerGlobalScope() {};
+  // Make self an instance of WorkerGlobalScope
+  Object.setPrototypeOf(self, WorkerGlobalScope.prototype);
+}
+
+if (typeof DedicatedWorkerGlobalScope === 'undefined') {
+  console.log('[Worker] POLYFILL: Adding missing DedicatedWorkerGlobalScope');
+  self.DedicatedWorkerGlobalScope = function DedicatedWorkerGlobalScope() {};
+  // Set up prototype chain: DedicatedWorkerGlobalScope extends WorkerGlobalScope
+  DedicatedWorkerGlobalScope.prototype = Object.create(WorkerGlobalScope.prototype);
+  DedicatedWorkerGlobalScope.prototype.constructor = DedicatedWorkerGlobalScope;
+  // Make self an instance of DedicatedWorkerGlobalScope
+  Object.setPrototypeOf(self, DedicatedWorkerGlobalScope.prototype);
+}
+
+// Ensure importScripts is available (required for worker detection)
+if (typeof importScripts === 'undefined') {
+  console.log('[Worker] POLYFILL: Adding missing importScripts');
+  self.importScripts = function importScripts(...urls) {
+    console.log('[Worker] POLYFILL: importScripts called with:', urls);
+    // In Chrome extension context, we can't actually import scripts dynamically
+    // But having this function available helps with worker detection
+  };
+}
+
+// Verify the polyfills work
+console.log('[Worker] === POLYFILL VERIFICATION ===');
+try {
+  console.log('[Worker] - self instanceof WorkerGlobalScope (after polyfill):', self instanceof WorkerGlobalScope);
+} catch (e) {
+  console.log('[Worker] - WorkerGlobalScope instanceof check still failed:', e.message);
+}
+
+try {
+  console.log('[Worker] - self instanceof DedicatedWorkerGlobalScope (after polyfill):', self instanceof DedicatedWorkerGlobalScope);
+} catch (e) {
+  console.log('[Worker] - DedicatedWorkerGlobalScope instanceof check still failed:', e.message);
+}
+console.log('[Worker] === END POLYFILL VERIFICATION ===');
+
 let webnode = null;
 let rpc = null;
 

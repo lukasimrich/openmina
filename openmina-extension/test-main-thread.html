@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OpenMina Main Thread Test</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval'; object-src 'self'">
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+    .test-section { margin: 20px 0; padding: 15px; background: white; border-radius: 5px; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .info { color: blue; }
+    .warning { color: orange; }
+    pre { background: #f8f8f8; padding: 10px; border-radius: 3px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🧪 OpenMina Main Thread Test</h1>
+
+  <div class="test-section">
+    <h2>1. Environment Check</h2>
+    <div id="env-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>2. Thread Detection Test</h2>
+    <div id="thread-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>3. WASM Loading Test</h2>
+    <div id="wasm-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>4. Test Logs</h2>
+    <pre id="test-logs"></pre>
+  </div>
+
+  <script>
+    // Test logging
+    const logs = [];
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] ${message}`;
+      logs.push(logEntry);
+      console.log(logEntry);
+
+      const logsEl = document.getElementById('test-logs');
+      if (logsEl) {
+        logsEl.textContent = logs.join('\n');
+        logsEl.scrollTop = logsEl.scrollHeight;
+      }
+    }
+
+    function updateResult(sectionId, content, className = '') {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.innerHTML = `<div class="${className}">${content}</div>`;
+      }
+    }
+
+    // Test 1: Environment Check
+    async function testEnvironment() {
+      log('Testing environment...', 'info');
+
+      const results = [];
+
+      // Cross-origin isolation
+      const coi = self.crossOriginIsolated;
+      results.push(`Cross-origin isolated: ${coi ? '✅ YES' : '❌ NO'}`);
+      log(`Cross-origin isolated: ${coi}`);
+
+      // SharedArrayBuffer
+      const sab = typeof SharedArrayBuffer !== 'undefined';
+      results.push(`SharedArrayBuffer: ${sab ? '✅ Available' : '❌ Not available'}`);
+      log(`SharedArrayBuffer available: ${sab}`);
+
+      // WebAssembly
+      const wasm = typeof WebAssembly !== 'undefined';
+      results.push(`WebAssembly: ${wasm ? '✅ Available' : '❌ Not available'}`);
+      log(`WebAssembly available: ${wasm}`);
+
+      // Extension context
+      const ext = typeof chrome !== 'undefined' && chrome.runtime;
+      results.push(`Chrome extension: ${ext ? '✅ YES' : '❌ NO'}`);
+      log(`Chrome extension context: ${ext}`);
+
+      const allGood = coi && sab && wasm;
+      updateResult('env-results', results.join('<br>'), allGood ? 'success' : 'error');
+
+      return allGood;
+    }
+
+    // Test 2: Thread Detection
+    async function testThreadDetection() {
+      log('Testing thread detection globals...', 'info');
+
+      const results = [];
+
+      // Check global types
+      results.push(`typeof self: ${typeof self}`);
+      results.push(`typeof window: ${typeof window}`);
+      results.push(`typeof globalThis: ${typeof globalThis}`);
+      results.push(`typeof WorkerGlobalScope: ${typeof WorkerGlobalScope}`);
+      results.push(`typeof DedicatedWorkerGlobalScope: ${typeof DedicatedWorkerGlobalScope}`);
+      results.push(`typeof importScripts: ${typeof importScripts}`);
+
+      // Check relationships
+      results.push(`self === window: ${self === window}`);
+      results.push(`self === globalThis: ${self === globalThis}`);
+      results.push(`self.constructor.name: ${self.constructor.name}`);
+
+      // Test instanceof checks (what WASM uses)
+      try {
+        const isWorkerGlobal = self instanceof WorkerGlobalScope;
+        results.push(`self instanceof WorkerGlobalScope: ${isWorkerGlobal ? '✅ TRUE' : '❌ FALSE'}`);
+        log(`WorkerGlobalScope instanceof check: ${isWorkerGlobal}`);
+      } catch (e) {
+        results.push(`self instanceof WorkerGlobalScope: ❌ ERROR - ${e.message}`);
+        log(`WorkerGlobalScope instanceof error: ${e.message}`, 'error');
+      }
+
+      try {
+        const isDedicatedWorker = self instanceof DedicatedWorkerGlobalScope;
+        results.push(`self instanceof DedicatedWorkerGlobalScope: ${isDedicatedWorker ? '✅ TRUE' : '❌ FALSE'}`);
+        log(`DedicatedWorkerGlobalScope instanceof check: ${isDedicatedWorker}`);
+      } catch (e) {
+        results.push(`self instanceof DedicatedWorkerGlobalScope: ❌ ERROR - ${e.message}`);
+        log(`DedicatedWorkerGlobalScope instanceof error: ${e.message}`, 'error');
+      }
+
+      // In main thread, both should be FALSE (this is what OpenMina expects)
+      const expectedMainThread = !(self instanceof WorkerGlobalScope) && !(self instanceof DedicatedWorkerGlobalScope);
+      results.push(`<br><strong>Expected main thread behavior: ${expectedMainThread ? '✅ CORRECT' : '❌ INCORRECT'}</strong>`);
+
+      updateResult('thread-results', results.join('<br>'), expectedMainThread ? 'success' : 'warning');
+
+      return expectedMainThread;
+    }
+
+    // Test 3: WASM Loading
+    async function testWasmLoading() {
+      log('Testing WASM loading...', 'info');
+
+      try {
+        updateResult('wasm-results', 'Setting up polyfills and loading WASM...', 'info');
+
+        // CRITICAL: Set up WorkerGlobalScope polyfill first
+        setupWorkerGlobalScopePolyfill();
+
+        // Try to import the WASM module (same as our implementation)
+        log('Importing WASM module...');
+        const wasmModule = await import('./assets/webnode/pkg/openmina_node_web.js');
+        log('✅ WASM module imported successfully', 'success');
+
+        // Try to initialize with memory
+        log('Creating SharedArrayBuffer memory...');
+        const memory = new WebAssembly.Memory({
+          initial: 32,
+          maximum: 65536,
+          shared: true
+        });
+        log('✅ Memory created successfully', 'success');
+
+        // Try WASM initialization (this is where the thread detection happens)
+        log('Initializing WASM (this tests thread detection)...');
+        await wasmModule.default(undefined, memory);
+        log('🎉 WASM initialized successfully - thread detection worked!', 'success');
+
+        updateResult('wasm-results', '🎉 WASM loading and initialization successful!<br>Thread detection working correctly in main thread.', 'success');
+
+        return true;
+
+      } catch (error) {
+        log(`❌ WASM loading failed: ${error.message}`, 'error');
+        log(`Error stack: ${error.stack}`, 'error');
+
+        updateResult('wasm-results', `❌ WASM loading failed:<br><code>${error.message}</code>`, 'error');
+
+        return false;
+      }
+    }
+
+    // Polyfill function (same as main implementation)
+    function setupWorkerGlobalScopePolyfill() {
+      log('Setting up WorkerGlobalScope polyfill for thread detection...', 'info');
+
+      // Check if WorkerGlobalScope is missing (Chrome extension issue)
+      if (typeof WorkerGlobalScope === 'undefined') {
+        log('POLYFILL: Adding missing WorkerGlobalScope constructor', 'info');
+
+        // Create WorkerGlobalScope constructor
+        window.WorkerGlobalScope = function WorkerGlobalScope() {};
+
+        // Set up prototype
+        WorkerGlobalScope.prototype = Object.create(EventTarget.prototype);
+        WorkerGlobalScope.prototype.constructor = WorkerGlobalScope;
+
+        // Add to global scope
+        self.WorkerGlobalScope = window.WorkerGlobalScope;
+      }
+
+      if (typeof DedicatedWorkerGlobalScope === 'undefined') {
+        log('POLYFILL: Adding missing DedicatedWorkerGlobalScope constructor', 'info');
+
+        // Create DedicatedWorkerGlobalScope constructor
+        window.DedicatedWorkerGlobalScope = function DedicatedWorkerGlobalScope() {};
+
+        // Set up prototype chain: DedicatedWorkerGlobalScope extends WorkerGlobalScope
+        DedicatedWorkerGlobalScope.prototype = Object.create(WorkerGlobalScope.prototype);
+        DedicatedWorkerGlobalScope.prototype.constructor = DedicatedWorkerGlobalScope;
+
+        // Add to global scope
+        self.DedicatedWorkerGlobalScope = window.DedicatedWorkerGlobalScope;
+      }
+
+      // Verify the polyfill works
+      log('POLYFILL VERIFICATION:', 'info');
+      log(`- typeof WorkerGlobalScope: ${typeof WorkerGlobalScope}`, 'info');
+      log(`- typeof DedicatedWorkerGlobalScope: ${typeof DedicatedWorkerGlobalScope}`, 'info');
+
+      try {
+        const isWorkerGlobal = self instanceof WorkerGlobalScope;
+        log(`- self instanceof WorkerGlobalScope: ${isWorkerGlobal} (should be FALSE in main thread)`, 'info');
+      } catch (e) {
+        log(`- WorkerGlobalScope instanceof check failed: ${e.message}`, 'error');
+      }
+
+      try {
+        const isDedicatedWorker = self instanceof DedicatedWorkerGlobalScope;
+        log(`- self instanceof DedicatedWorkerGlobalScope: ${isDedicatedWorker} (should be FALSE in main thread)`, 'info');
+      } catch (e) {
+        log(`- DedicatedWorkerGlobalScope instanceof check failed: ${e.message}`, 'error');
+      }
+
+      log('WorkerGlobalScope polyfill setup complete', 'success');
+    }
+
+    // Run all tests
+    async function runTests() {
+      log('🧪 Starting OpenMina main thread tests...', 'info');
+
+      const envOk = await testEnvironment();
+      const threadOk = await testThreadDetection();
+
+      if (envOk && threadOk) {
+        log('Environment and thread detection look good, testing WASM...', 'info');
+        const wasmOk = await testWasmLoading();
+
+        if (wasmOk) {
+          log('🎉 ALL TESTS PASSED! Main thread approach should work.', 'success');
+        } else {
+          log('❌ WASM test failed. Need to investigate further.', 'error');
+        }
+      } else {
+        log('❌ Environment or thread detection issues. Cannot proceed with WASM test.', 'error');
+      }
+
+      log('Tests completed.', 'info');
+    }
+
+    // Start tests when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      log('Test page loaded, starting tests...', 'info');
+      runTests();
+    });
+  </script>
+</body>
+</html>

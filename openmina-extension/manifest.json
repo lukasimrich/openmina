@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OpenMina Web Node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenMina blockchain node running in Chrome",
 
   "cross_origin_opener_policy": { "value": "same-origin" },
@@ -17,7 +17,7 @@
   },
 
   "web_accessible_resources": [{
-    "resources": ["webnode.html", "assets/webnode/**/*", "coi-serviceworker.js", "webnode-worker.js"],
+    "resources": ["webnode.html", "test-main-thread.html", "assets/webnode/**/*", "coi-serviceworker.js", "webnode-worker.js"],
     "matches": ["<all_urls>"]
   }]
 
